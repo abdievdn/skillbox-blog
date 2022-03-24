@@ -1,15 +1,13 @@
 package model;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "users")
 public class User {
@@ -21,6 +19,9 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
     private boolean isModerator;
+
+    @Column(nullable = false, name = "moderation_count")
+    private int moderationCount;
 
     @Column(nullable = false, name = "reg_time")
     private Date regTime;

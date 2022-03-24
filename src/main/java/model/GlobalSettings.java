@@ -1,18 +1,15 @@
 package model;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.type.YesNoType;
 
 import javax.persistence.*;
 
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "global_settings")
-public class GlobalSetting {
+public class GlobalSettings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +22,6 @@ public class GlobalSetting {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private YesNoType value;
+    @Column(nullable = false, columnDefinition = "TINYINT")
+    private boolean value;
 }
