@@ -1,6 +1,6 @@
-package service;
+package main.service;
 
-import api.response.TagResponse;
+import main.api.response.TagResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

@@ -1,12 +1,12 @@
-package model;
+package main.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "global_settings")
 public class GlobalSettings {
@@ -22,6 +22,6 @@ public class GlobalSettings {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, columnDefinition = "TINYINT")
-    private boolean value;
+    @Column(nullable = false)
+    private String value;
 }

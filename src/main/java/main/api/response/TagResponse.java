@@ -1,4 +1,4 @@
-package api.response;
+package main.api.response;
 
 import lombok.Data;
 

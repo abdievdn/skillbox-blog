@@ -1,7 +1,6 @@
-package service;
+package main.service;
 
-import api.response.PostResponse;
-import net.bytebuddy.utility.RandomString;
+import main.api.response.PostResponse;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;

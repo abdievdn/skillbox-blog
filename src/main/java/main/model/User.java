@@ -1,13 +1,13 @@
-package model;
+package main.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User {
@@ -38,4 +38,13 @@ public class User {
     private String code;
 
     private String photo;
+
+    public User(boolean isModerator, int moderationCount, Date regTime, String name, String email, String password) {
+        this.isModerator = isModerator;
+        this.moderationCount = moderationCount;
+        this.regTime = regTime;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+    }
 }
