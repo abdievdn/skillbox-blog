@@ -1,11 +1,10 @@
-package model;
+package main.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Set;
 
 @NoArgsConstructor
 @Getter
@@ -43,4 +42,8 @@ public class Post {
 
     @Column(nullable = false, name = "view_count")
     private int viewCount;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "post2tag")
+    private Set<Tag> tags;
 }

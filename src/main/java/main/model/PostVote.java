@@ -1,8 +1,6 @@
-package model;
+package main.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -11,8 +9,8 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
-@Table(name = "post_comments")
-public class PostComment {
+@Table(name = "post_votes")
+public class PostVote {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,17 +18,14 @@ public class PostComment {
     private int id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private PostComment parent;
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User user;
-
     @Column(nullable = false)
     private Date time;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String text;
+    @Column(nullable = false, columnDefinition = "TINYINT")
+    private int value; // -1, 0, 1
 }

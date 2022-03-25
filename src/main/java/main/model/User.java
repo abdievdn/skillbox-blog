@@ -1,8 +1,6 @@
-package model;
+package main.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -22,6 +20,9 @@ public class User {
     @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
     private boolean isModerator;
 
+    @Column(nullable = false, name = "moderation_count")
+    private int moderationCount;
+
     @Column(nullable = false, name = "reg_time")
     private Date regTime;
 
@@ -37,4 +38,13 @@ public class User {
     private String code;
 
     private String photo;
+
+    public User(boolean isModerator, int moderationCount, Date regTime, String name, String email, String password) {
+        this.isModerator = isModerator;
+        this.moderationCount = moderationCount;
+        this.regTime = regTime;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+    }
 }
