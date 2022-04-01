@@ -1,23 +1,21 @@
-package main.api.response;
+package main.response;
 
 import lombok.Data;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Data
 public class PostResponse {
 
     private int count = 0;
-    private ArrayList<PostResponseModel> posts = new ArrayList<>();
-    public static final String CONTINUES = "...";
+    private List<PostsInPostResponse> posts = new CopyOnWriteArrayList<>();
 
     @Data
-    public static class PostResponseModel {
+    public static class PostsInPostResponse {
         private int id;
         private long timestamp;
-        private UserResponseModel user;
+        private UserInPostResponse user;
         private String tittle;
         private String announce;
         private int likeCount;
@@ -26,7 +24,7 @@ public class PostResponse {
         private int viewCount;
 
         @Data
-        public static class UserResponseModel {
+        public static class UserInPostResponse {
             private int id;
             private String name;
         }

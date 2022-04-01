@@ -1,6 +1,6 @@
 package main.service;
 
-import main.api.response.SettingsResponse;
+import main.response.SettingsResponse;
 import main.model.GlobalSettings;
 import main.repository.SettingsRepository;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +24,6 @@ public class SettingsService {
     private void checkData() {
         Iterable<GlobalSettings> globalSettings = settingsRepository.findAll();
         if (globalSettings.iterator().hasNext()) {
-            logger.info("Table global_settings is not empty");
             return;
         }
         insertSettings(MULTIUSER_MODE, "Многопользовательский режим", "NO");

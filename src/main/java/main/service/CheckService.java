@@ -1,6 +1,6 @@
 package main.service;
 
-import main.api.response.CheckResponse;
+import main.response.CheckResponse;
 import main.model.User;
 import main.repository.CheckRepository;
 import org.apache.logging.log4j.LogManager;

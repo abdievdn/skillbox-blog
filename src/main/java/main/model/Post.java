@@ -18,17 +18,17 @@ public class Post {
     @Column(nullable = false)
     private int id;
 
-    @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_active")
+    @Column(nullable = false, columnDefinition = "TINYINT", name = "is_active")
     private boolean isActive;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "ENUM('NEW','ACCEPTED','DECLINED')", name = "moderation_status")
     private ModerationStatus moderationStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private User moderator;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private User user;
 
     @Column(nullable = false)
