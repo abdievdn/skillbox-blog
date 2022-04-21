@@ -1,9 +1,9 @@
 package main.repository;
 
-import main.model.Post;
+import main.model.PostComment;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PostRepository extends CrudRepository<Post, Integer> {
+public interface PostCommentRepository extends CrudRepository<PostComment, Integer> {
 }

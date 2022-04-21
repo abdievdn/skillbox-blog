@@ -3,7 +3,7 @@ package main.model;
 import lombok.*;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -25,14 +25,14 @@ public class Post {
     @Column(nullable = false, columnDefinition = "ENUM('NEW','ACCEPTED','DECLINED')", name = "moderation_status")
     private ModerationStatus moderationStatus;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private User moderator;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
     @Column(nullable = false)
-    private Date time;
+    private LocalDateTime time;
 
     @Column(nullable = false)
     private String title;
@@ -43,7 +43,9 @@ public class Post {
     @Column(nullable = false, name = "view_count")
     private int viewCount;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "post2tag")
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinTable(name = "tag2post",
+            joinColumns = @JoinColumn(name = "post_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id"))
     private Set<Tag> tags;
 }

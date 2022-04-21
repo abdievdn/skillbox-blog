@@ -32,11 +32,11 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/tag")
-    public ResponseEntity<TagResponse> tag() {
-        TagResponse tagResponse = tagService.getTags();
-        if (tagResponse == null) {
+    public ResponseEntity<TagsResponse> tag() {
+        TagsResponse tagsResponse = tagService.getTags();
+        if (tagsResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(tagResponse);
+        return ResponseEntity.ok(tagsResponse);
     }
 }

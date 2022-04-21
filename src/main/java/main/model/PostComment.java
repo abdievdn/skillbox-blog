@@ -3,7 +3,7 @@ package main.model;
 import lombok.*;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Getter
@@ -27,7 +27,7 @@ public class PostComment {
     private User user;
 
     @Column(nullable = false)
-    private Date time;
+    private LocalDateTime time;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String text;
