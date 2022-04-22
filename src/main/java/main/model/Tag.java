@@ -20,7 +20,7 @@ public class Tag {
     @Column(nullable = false)
     private String name;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "tag2post",
             joinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "post_id", referencedColumnName = "id"))

@@ -3,7 +3,7 @@ package main.model;
 import lombok.*;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -18,7 +18,7 @@ public class Post {
     @Column(nullable = false)
     private int id;
 
-    @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_active")
+    @Column(nullable = false, columnDefinition = "TINYINT", name = "is_active")
     private boolean isActive;
 
     @Enumerated(EnumType.STRING)
@@ -32,7 +32,7 @@ public class Post {
     private User user;
 
     @Column(nullable = false)
-    private Date time;
+    private LocalDateTime time;
 
     @Column(nullable = false)
     private String title;
@@ -43,7 +43,9 @@ public class Post {
     @Column(nullable = false, name = "view_count")
     private int viewCount;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "post2tag")
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinTable(name = "tag2post",
+            joinColumns = @JoinColumn(name = "post_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id"))
     private Set<Tag> tags;
 }

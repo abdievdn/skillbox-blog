@@ -3,7 +3,7 @@ package main.model;
 import lombok.*;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Getter
@@ -18,11 +18,11 @@ public class CaptchaCode {
     private int id;
 
     @Column(nullable = false)
-    private Date time;
+    private LocalDateTime time;
 
     @Column(nullable = false, columnDefinition = "TINYTEXT")
     private String code; // picture link
 
     @Column(nullable = false, columnDefinition = "TINYTEXT", name = "secret_code")
-    private String secretCode; // parameter
+    private String secretCode; // key
 }
