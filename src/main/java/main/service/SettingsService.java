@@ -3,14 +3,11 @@ package main.service;
 import main.response.SettingsResponse;
 import main.model.GlobalSettings;
 import main.repository.SettingsRepository;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SettingsService {
 
-    private static Logger logger = LogManager.getRootLogger();
     public static final String MULTIUSER_MODE = "MULTIUSER_MODE";
     public static final String POST_PREMODERATION = "POST_PREMODERATION";
     public static final String STATISTICS_IS_PUBLIC = "STATISTICS_IS_PUBLIC";
@@ -29,7 +26,6 @@ public class SettingsService {
         insertSettings(MULTIUSER_MODE, "Многопользовательский режим", "NO");
         insertSettings(POST_PREMODERATION, "Премодерация постов", "YES");
         insertSettings(STATISTICS_IS_PUBLIC, "Показывать всем статистику блога", "YES");
-        logger.warn("Table global_settings was empty and filled");
     }
 
     private void insertSettings(String code, String name, String value) {

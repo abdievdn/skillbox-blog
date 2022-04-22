@@ -7,8 +7,6 @@ import main.model.Tag;
 import main.repository.PostCommentRepository;
 import main.repository.PostRepository;
 import main.response.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,8 +30,6 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostCommentRepository postCommentRepository;
-
-    private static Logger logger;
 
     private static final Comparator<PostResponse>
             COMPARE_BY_TIME = (o1, o2) -> Long.compare(o2.getTimestamp(), o1.getTimestamp()),
@@ -111,7 +107,7 @@ public class PostService {
             }
             postByIdResponse.setComments(commentsToPost);
             Set<String> tagsToPost = new CopyOnWriteArraySet<>();
-            for (Tag tag: post.get().getTags()) {
+            for (Tag tag : post.get().getTags()) {
                 tagsToPost.add(tag.getName());
             }
             postByIdResponse.setTags(tagsToPost);
@@ -158,7 +154,6 @@ public class PostService {
     }
 
     private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, String key) {
-        logger = LogManager.getRootLogger();
         int count = 0;
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
@@ -206,7 +201,7 @@ public class PostService {
         user.put("name", post.getUser().getName());
         postResponse.setUser(user);
         postResponse.setTittle(post.getTitle());
-        postResponse.setAnnounce(announce(post.getText()));
+        postResponse.setAnnounce(announce(post.getText(), 0, 150));
         postResponse.setLikeCount(0); // todo
         postResponse.setDislikeCount(0); //todo
         postResponse.setCommentCount(0); //todo
@@ -216,16 +211,15 @@ public class PostService {
 
     private long calculateTimestamp(LocalDateTime time) {
         ZonedDateTime zdt = ZonedDateTime.of(time, ZoneId.systemDefault());
-        long timestamp = zdt.toInstant().toEpochMilli() / 1000;
-        return timestamp;
+        return zdt.toInstant().toEpochMilli() / 1000;
     }
 
     private boolean isActual(Post post) {
         return post.getModerationStatus().equals(ModerationStatus.ACCEPTED) && post.isActive();
     }
 
-    private String announce(String text) {
-        return text.substring(0, 150).concat("...");
+    private String announce(String text, int start, int end) {
+        return text.substring(start, end).concat("...");
     }
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {

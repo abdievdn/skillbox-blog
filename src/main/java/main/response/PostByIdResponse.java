@@ -1,7 +1,6 @@
 package main.response;
 
 import lombok.Data;
-import main.model.Tag;
 
 import java.util.List;
 import java.util.Map;

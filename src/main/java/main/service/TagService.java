@@ -9,6 +9,8 @@ import main.response.TagResponse;
 import main.response.TagsResponse;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -24,32 +26,42 @@ public class TagService {
     }
 
     public TagsResponse getTags() {
-        int postsCount = getPostsCount();
         TagsResponse tagsResponse = new TagsResponse();
-        Set<TagResponse> tags = new CopyOnWriteArraySet<>();
+
+        // collect tags (name, weight) to map and calculate ratio
+        double ratio;
+        int postsCount = getPostsCount();
+        Map<String, Double> tagsWeight = new HashMap<>();
+        double popularTagRawWeight = 0;
         Iterable<Tag> tagIterable = tagRepository.findAll();
         for (Tag tag : tagIterable) {
-            double postsForTagCount = tag.getPosts().size();
+            int postsToTagsCount = tag.getPosts().size();
+            double rawWeight = calculateRawWeight(postsToTagsCount, postsCount);
+            if (rawWeight > popularTagRawWeight) {
+                popularTagRawWeight = rawWeight;
+            }
+            tagsWeight.put(tag.getName(), rawWeight);
+        }
+        if (popularTagRawWeight == 0) {
+            return tagsResponse;
+        }
+        ratio = 1 / popularTagRawWeight;
+
+        Set<TagResponse> tags = new CopyOnWriteArraySet<>();
+        for (Map.Entry<String, Double> entry : tagsWeight.entrySet()) {
             TagResponse tagResponse = new TagResponse();
-            tagResponse.setName(tag.getName());
-            // begin weight calculating
-            double weight = postsForTagCount / postsCount;
-            weight = Math.round((weight * 100)) / (double) 100; // round to .00
-            // end
-            tagResponse.setWeight(weight);
+            tagResponse.setName(entry.getKey());
+            tagResponse.setWeight(entry.getValue() * ratio);
             tags.add(tagResponse);
         }
         tagsResponse.setTags(tags);
         return tagsResponse;
     }
 
-    private int getTagsCount() {
-        int count = 0;
-        Iterable<Tag> tagIterable = tagRepository.findAll();
-        for (Tag tag: tagIterable) {
-            count++;
-        }
-        return count;
+    private double calculateRawWeight(int postsToTagCount, int postsCount) {
+        double weight = (double) postsToTagCount / postsCount;
+        weight = Math.round((weight * 100)) / (double) 100; // round to .00
+        return weight;
     }
 
     private int getPostsCount() {
@@ -63,5 +75,4 @@ public class TagService {
         }
         return count;
     }
-
 }
