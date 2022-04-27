@@ -9,7 +9,7 @@ public class PostResponse {
 
     private int id;
     private long timestamp;
-    private Map <String, String> user; // id, name
+    private UserResponse user; // id, name
     private String tittle;
     private String announce;
     private int likeCount;

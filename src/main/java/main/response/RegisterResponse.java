@@ -1,16 +1,12 @@
 package main.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RegisterResponse {
 
-    private String email;
-    private String password;
-    private String name;
-    private String captcha;
-    @JsonProperty("captcha_secret")
-    private String captchaSecret;
-
+    private boolean result;
+    private ErrorsResponse errors;
 }

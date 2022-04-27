@@ -11,7 +11,7 @@ public class PostByIdResponse {
 
     private int id;
     private long timestamp;
-    private Map<String, String> user; // id, name
+    private UserResponse user; // id, name
     private String tittle;
     private String text;
     private int likeCount;

@@ -10,6 +10,6 @@ public class PostCommentResponse {
     private int id;
     private long timestamp;
     private String text;
-    private Map<String, String> user; // id, name, photo
+    private UserResponse user; // id, name, photo
 
 }

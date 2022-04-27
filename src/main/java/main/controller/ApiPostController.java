@@ -1,54 +1,45 @@
 package main.controller;
 
+import lombok.AllArgsConstructor;
+import main.request.PostRequest;
 import main.response.CalendarResponse;
 import main.response.PostByIdResponse;
 import main.response.PostsResponse;
 import main.service.PostService;
+import main.request.RequestKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class ApiPostController {
 
-    public static final String
-            OFFSET = "offset",
-            LIMIT = "limit",
-            MODE = "mode";
     private final PostService postService;
 
-    public ApiPostController(PostService postService) {
-        this.postService = postService;
-    }
-
     @GetMapping("/post")
-    public ResponseEntity<PostsResponse> post(@RequestParam Map<String, String> params) {
-        PostsResponse postsResponse = postService
-                .getActualPosts(params.get(OFFSET), params.get(LIMIT), params.get(MODE));
+    public ResponseEntity<PostsResponse> post(PostRequest postRequest) {
+        PostsResponse postsResponse = postService.getActualPosts(postRequest);
         return checkPostResponseEntity(postsResponse);
     }
 
     @GetMapping("/post/search")
-    public ResponseEntity<PostsResponse> postSearch(@RequestParam Map<String, String> params) {
-        PostsResponse postsResponse = postService
-                .searchPosts(params.get(OFFSET), params.get(LIMIT), params.get("query"), "query");
+    public ResponseEntity<PostsResponse> postSearch(PostRequest postRequest) {
+        PostsResponse postsResponse = postService.searchPosts(postRequest, RequestKey.SEARCH);
         return checkPostResponseEntity(postsResponse);
     }
 
     @GetMapping("/post/byDate")
-    public ResponseEntity<PostsResponse> postByDate(@RequestParam Map<String, String> params) {
-        PostsResponse postsResponse = postService
-                .getPostsByDate(params.get(OFFSET), params.get(LIMIT), params.get("date"), "date");
+    public ResponseEntity<PostsResponse> postByDate(PostRequest postRequest) {
+        PostsResponse postsResponse = postService.getPostsByDate(postRequest, RequestKey.DATE);
         return checkPostResponseEntity(postsResponse);
     }
 
     @GetMapping("/post/byTag")
-    public ResponseEntity<PostsResponse> postByTag(@RequestParam Map<String, String> params) {
-        PostsResponse postsResponse = postService
-                .getPostsByTag(params.get(OFFSET), params.get(LIMIT), params.get("tag"), "tag");
+    public ResponseEntity<PostsResponse> postByTag(PostRequest postRequest) {
+        PostsResponse postsResponse = postService.getPostsByTag(postRequest, RequestKey.TAG);
         return checkPostResponseEntity(postsResponse);
     }
 

@@ -6,6 +6,8 @@ import main.model.PostComment;
 import main.model.Tag;
 import main.repository.PostCommentRepository;
 import main.repository.PostRepository;
+import main.request.PostRequest;
+import main.request.RequestKey;
 import main.response.*;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +16,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -41,35 +42,35 @@ public class PostService {
         this.postCommentRepository = postCommentRepository;
     }
 
-    public PostsResponse getActualPosts(String offset, String limit, String mode) {
+    public PostsResponse getActualPosts(PostRequest postRequest) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse);
-        sortPostsByMode(mode, posts);
-        postsResponse.setPosts(postsSublist(offset, limit, posts));
+        sortPostsByMode(postRequest.getMode(), posts);
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse searchPosts(String offset, String limit, String query, String key) {
+    public PostsResponse searchPosts(PostRequest postRequest, RequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, query, key);
+        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getQuery(), key);
         sortPostsByMode(RECENT, posts);
-        postsResponse.setPosts(postsSublist(offset, limit, posts));
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsByDate(String offset, String limit, String date, String key) {
+    public PostsResponse getPostsByDate(PostRequest postRequest, RequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, date, key);
+        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getDate(), key);
         sortPostsByMode(RECENT, posts);
-        postsResponse.setPosts(postsSublist(offset, limit, posts));
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsByTag(String offset, String limit, String tag, String key) {
+    public PostsResponse getPostsByTag(PostRequest postRequest, RequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, tag, key);
+        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
         sortPostsByMode(RECENT, posts);
-        postsResponse.setPosts(postsSublist(offset, limit, posts));
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
@@ -79,9 +80,9 @@ public class PostService {
         if (post.isPresent()) {
             postByIdResponse.setId(id);
             postByIdResponse.setTimestamp(calculateTimestamp(post.get().getTime()));
-            Map<String, String> user = new HashMap<>();
-            user.put("id", String.valueOf(post.get().getUser().getId()));
-            user.put("name", post.get().getUser().getName());
+            UserResponse user = new UserResponse();
+            user.setId(post.get().getUser().getId());
+            user.setName(post.get().getUser().getName());
             postByIdResponse.setUser(user);
             postByIdResponse.setTittle(post.get().getTitle());
             postByIdResponse.setText(post.get().getText());
@@ -97,10 +98,10 @@ public class PostService {
                     postCommentResponse.setId(comment.getId());
                     postCommentResponse.setTimestamp(calculateTimestamp(comment.getTime()));
                     postCommentResponse.setText(comment.getText());
-                    Map<String, String> userToComment = new ConcurrentHashMap<>();
-                    userToComment.put("id", String.valueOf(comment.getUser().getId()));
-                    userToComment.put("name", comment.getUser().getName());
-                    userToComment.put("photo", comment.getUser().getPhoto());
+                    UserResponse userToComment = new UserResponse();
+                    userToComment.setId(comment.getUser().getId());
+                    userToComment.setName(comment.getUser().getName());
+                    userToComment.setPhoto(comment.getUser().getPhoto());
                     postCommentResponse.setUser(userToComment);
                     commentsToPost.add(postCommentResponse);
                 }
@@ -153,7 +154,7 @@ public class PostService {
         return posts;
     }
 
-    private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, String key) {
+    private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, RequestKey key) {
         int count = 0;
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
@@ -161,19 +162,20 @@ public class PostService {
             if (!isActual(post)) {
                 continue;
             }
-            if (key.equals("query")) {
+
+            if (key.equals(RequestKey.SEARCH)) {
                 String text = post.getText().toLowerCase();
                 if (!text.contains(value.toLowerCase())) {
                     continue;
                 }
             }
-            if (key.equals("date")) {
+            if (key.equals(RequestKey.DATE)) {
                 String dateFromPost = DATE_FORMAT.format(post.getTime());
                 if (!value.equals(dateFromPost)) {
                     continue;
                 }
             }
-            if (key.equals("tag")) {
+            if (key.equals(RequestKey.TAG)) {
                 boolean noTag = true;
                 for (Tag tag : post.getTags()) {
                     if (value.equals(tag.getName())) {
@@ -196,9 +198,9 @@ public class PostService {
         PostResponse postResponse = new PostResponse();
         postResponse.setId(post.getId());
         postResponse.setTimestamp(calculateTimestamp(post.getTime()));
-        Map<String, String> user = new HashMap<>();
-        user.put("id", String.valueOf(post.getUser().getId()));
-        user.put("name", post.getUser().getName());
+        UserResponse user = new UserResponse();
+        user.setId(post.getUser().getId());
+        user.setName(post.getUser().getName());
         postResponse.setUser(user);
         postResponse.setTittle(post.getTitle());
         postResponse.setAnnounce(announce(post.getText(), 0, 150));
@@ -241,13 +243,11 @@ public class PostService {
         }
     }
 
-    private List<PostResponse> postsSublist(String offset, String limit, List<PostResponse> posts) {
-        int offsetNumber = Integer.parseInt(offset);
-        int limitNumber = Integer.parseInt(limit);
-        int countNumber = offsetNumber + limitNumber;
-        if (countNumber >= posts.size()) {
-            countNumber = posts.size();
+    private List<PostResponse> postsSublist(int offset, int limit, List<PostResponse> posts) {
+        int count = offset + limit;
+        if (count >= posts.size()) {
+            count = posts.size();
         }
-        return posts.subList(offsetNumber, countNumber);
+        return posts.subList(offset, count);
     }
 }
