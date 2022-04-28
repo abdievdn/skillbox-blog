@@ -1,14 +1,14 @@
 package main.service;
 
+import main.api.response.*;
 import main.model.ModerationStatus;
 import main.model.Post;
 import main.model.PostComment;
 import main.model.Tag;
-import main.repository.PostCommentRepository;
-import main.repository.PostRepository;
-import main.request.PostRequest;
-import main.request.RequestKey;
-import main.response.*;
+import main.model.repository.PostCommentRepository;
+import main.model.repository.PostRepository;
+import main.api.request.PostRequest;
+import main.api.request.RequestKey;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

@@ -1,52 +1,71 @@
 package main.service;
 
+import lombok.AllArgsConstructor;
+import main.api.response.*;
+import main.model.CaptchaCode;
 import main.model.User;
-import main.repository.UserRepository;
-import main.request.LoginRequest;
-import main.response.LoginResponse;
-import main.request.RegisterRequest;
-import main.response.LogoutResponse;
-import main.response.RegisterResponse;
-import main.response.UserResponse;
+import main.model.repository.CaptchaCodeRepository;
+import main.model.repository.UserRepository;
+import main.api.request.LoginRequest;
+import main.api.request.RegisterRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
+    private final CaptchaCodeRepository captchaRepository;
     private final AuthenticationManager authenticationManager;
-    private Map<String, Integer> session;
-
-    public UserService(UserRepository userRepository, AuthenticationManager authenticationManager) {
-        this.userRepository = userRepository;
-        this.authenticationManager = authenticationManager;
-    }
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) {
         RegisterResponse registerResponse = new RegisterResponse();
-        try {
-            User user = new User();
-            user.setEmail(registerRequest.getEmail());
-            user.setPassword(registerRequest.getPassword());
-            user.setName(registerRequest.getName());
-            user.setCode(registerRequest.getCaptchaSecret());
-            user.setIsModerator(0);
-            user.setModerationCount(0);
-            user.setPhoto("");
-            userRepository.save(user);
-            registerResponse.setResult(true);
-            registerResponse.setErrors(null);
-        } catch (Exception e) {
-            registerResponse.setResult(false);
+        RegisterErrorsResponse registerErrorsResponse = new RegisterErrorsResponse();
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+            registerErrorsResponse.setEmail("Этот e-mail уже зарегистрирован");
+        } else {
+            Iterable<CaptchaCode> captchaCodeIterable = captchaRepository.findAll();
+            registerErrorsResponse.setCaptcha("Код с картинки введён неверно");
+            for (CaptchaCode captcha : captchaCodeIterable) {
+                if (captcha.getCode().equals(registerRequest.getCaptcha()) &&
+                        captcha.getSecretCode().equals(registerRequest.getCaptchaSecret())) {
+                    registerErrorsResponse.setCaptcha(null);
+                    String name = registerRequest.getName();
+                    String password = registerRequest.getPassword();
+                    if (name.isEmpty() || !name.matches("\\w*\\s?\\w*")) {
+                        registerErrorsResponse.setName("Имя указано неверно");
+                        break;
+                    }
+                    if (password.length() < 6) {
+                        registerErrorsResponse.setPassword("Пароль короче 6-ти символов");
+                        break;
+                    }
+                    User user = new User();
+                    user.setEmail(registerRequest.getEmail());
+                    BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+                    user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+                    user.setName(name);
+                    user.setIsModerator(0);
+                    user.setModerationCount(0);
+                    user.setPhoto("");
+                    user.setRegTime(LocalDateTime.now());
+                    userRepository.save(user);
+                    registerResponse.setResult(true);
+                    registerErrorsResponse = null;
+                    break;
+                }
+            }
         }
+        registerResponse.setErrors(registerErrorsResponse);
         return registerResponse;
     }
 
@@ -59,9 +78,8 @@ public class UserService {
             SecurityContextHolder.getContext().setAuthentication(auth);
             org.springframework.security.core.userdetails.User userLogin =
                     (org.springframework.security.core.userdetails.User) auth.getPrincipal();
-           createLoginResponse(loginResponse, userLogin.getUsername());
-        }
-        catch (Exception e) {
+            createLoginResponse(loginResponse, userLogin.getUsername());
+        } catch (Exception e) {
             loginResponse.setResult(false);
             loginResponse.setUser(null);
         }
@@ -78,10 +96,12 @@ public class UserService {
         return loginResponse;
     }
 
-    public LogoutResponse logoutResponse() {
-        return logoutResponse();
+    public LogoutResponse userLogout() {
+        LogoutResponse logoutResponse = new LogoutResponse();
+        logoutResponse.setResult(true);
+        SecurityContextHolder.clearContext();
+        return logoutResponse;
     }
-
 
     private void createLoginResponse(LoginResponse loginResponse, String email) {
         Optional<User> user = userRepository.findByEmail(email);

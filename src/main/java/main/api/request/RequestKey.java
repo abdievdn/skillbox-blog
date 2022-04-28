@@ -1,4 +1,4 @@
-package main.request;
+package main.api.request;
 
 public enum RequestKey {
     SEARCH,

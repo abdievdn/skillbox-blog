@@ -1,7 +1,9 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.response.*;
+import main.api.response.InitResponse;
+import main.api.response.SettingsResponse;
+import main.api.response.TagsResponse;
 import main.service.SettingsService;
 import main.service.TagService;
 import org.springframework.http.HttpStatus;

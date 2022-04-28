@@ -1,15 +1,14 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.request.PostRequest;
-import main.response.CalendarResponse;
-import main.response.PostByIdResponse;
-import main.response.PostsResponse;
+import main.api.request.PostRequest;
+import main.api.response.CalendarResponse;
+import main.api.response.PostByIdResponse;
+import main.api.response.PostsResponse;
 import main.service.PostService;
-import main.request.RequestKey;
+import main.api.request.RequestKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor

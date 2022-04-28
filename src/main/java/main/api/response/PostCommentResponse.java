@@ -1,8 +1,6 @@
-package main.response;
+package main.api.response;
 
 import lombok.Data;
-
-import java.util.Map;
 
 @Data
 public class PostCommentResponse {

@@ -3,8 +3,8 @@ package main.service;
 import com.github.cage.Cage;
 import com.github.cage.GCage;
 import main.model.CaptchaCode;
-import main.repository.CaptchaCodeRepository;
-import main.response.CaptchaCodeResponse;
+import main.model.repository.CaptchaCodeRepository;
+import main.api.response.CaptchaCodeResponse;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -25,9 +25,9 @@ public class CaptchaCodeService {
     public CaptchaCodeResponse generateCaptcha() {
         deleteExpiredCaptcha();
         CaptchaCodeResponse captchaResponse = new CaptchaCodeResponse();
-        String secret = UUID.randomUUID().toString();
+        String secret = UUID.randomUUID().toString().substring(0, 8);
         Cage cage = new GCage();
-        String code = cage.getTokenGenerator().next();
+        String code = cage.getTokenGenerator().next().substring(0, 4);
         byte[] image;
         InputStream inputStream = new ByteArrayInputStream(cage.draw(code));
         try {

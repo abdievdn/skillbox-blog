@@ -1,19 +1,22 @@
-package main.response;
+package main.api.response;
 
 import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
+import java.util.Set;
 
 @Data
-public class PostResponse {
+public class PostByIdResponse {
 
     private int id;
     private long timestamp;
     private UserResponse user; // id, name
     private String tittle;
-    private String announce;
+    private String text;
     private int likeCount;
     private int dislikeCount;
-    private int commentCount;
     private int viewCount;
+    private List<PostCommentResponse> comments;
+    private Set<String> tags;
+
 }

@@ -1,8 +1,8 @@
 package main.service;
 
-import main.response.SettingsResponse;
+import main.api.response.SettingsResponse;
 import main.model.GlobalSettings;
-import main.repository.SettingsRepository;
+import main.model.repository.SettingsRepository;
 import org.springframework.stereotype.Service;
 
 @Service

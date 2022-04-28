@@ -4,6 +4,7 @@ import lombok.*;
 import main.security.Role;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @NoArgsConstructor
@@ -25,7 +26,7 @@ public class User {
     private int moderationCount;
 
     @Column(nullable = false, name = "reg_time")
-    private Date regTime;
+    private LocalDateTime regTime;
 
     @Column(nullable = false)
     private String name;

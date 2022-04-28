@@ -1,9 +1,12 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.request.LoginRequest;
-import main.request.RegisterRequest;
-import main.response.*;
+import main.api.request.LoginRequest;
+import main.api.request.RegisterRequest;
+import main.api.response.CaptchaCodeResponse;
+import main.api.response.LoginResponse;
+import main.api.response.LogoutResponse;
+import main.api.response.RegisterResponse;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -39,8 +42,12 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public RegisterResponse register(RegisterRequest registerResponse) {
-        return userService.userRegister(registerResponse);
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) {
+        RegisterResponse registerResponse = userService.userRegister(registerRequest);
+        if (registerResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(registerResponse);
     }
 
     @PostMapping("/login")
@@ -54,7 +61,10 @@ public class ApiAuthController {
 
     @GetMapping("/logout")
     public ResponseEntity<LogoutResponse> logout() {
-        LogoutResponse logoutResponse = userService.logoutResponse();
+        LogoutResponse logoutResponse = userService.userLogout();
+        if (logoutResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         return ResponseEntity.ok(logoutResponse);
     }
 }

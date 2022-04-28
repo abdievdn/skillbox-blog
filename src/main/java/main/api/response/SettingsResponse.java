@@ -1,4 +1,4 @@
-package main.response;
+package main.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
