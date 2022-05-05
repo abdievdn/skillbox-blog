@@ -1,6 +1,6 @@
 package main.api.request;
 
-public enum RequestKey {
+public enum PostRequestKey {
     SEARCH,
     DATE,
     TAG

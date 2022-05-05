@@ -2,6 +2,7 @@ package main.controller;
 
 import lombok.AllArgsConstructor;
 import main.api.request.LoginRequest;
+import main.controller.advice.RegisterException;
 import main.api.request.RegisterRequest;
 import main.api.response.CaptchaCodeResponse;
 import main.api.response.LoginResponse;
@@ -42,7 +43,7 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) throws RegisterException {
         RegisterResponse registerResponse = userService.userRegister(registerRequest);
         if (registerResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

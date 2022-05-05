@@ -6,7 +6,7 @@ import main.api.response.CalendarResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsResponse;
 import main.service.PostService;
-import main.api.request.RequestKey;
+import main.api.request.PostRequestKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,19 +26,19 @@ public class ApiPostController {
 
     @GetMapping("/post/search")
     public ResponseEntity<PostsResponse> postSearch(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.searchPosts(postRequest, RequestKey.SEARCH);
+        PostsResponse postsResponse = postService.searchPosts(postRequest, PostRequestKey.SEARCH);
         return checkPostResponseEntity(postsResponse);
     }
 
     @GetMapping("/post/byDate")
     public ResponseEntity<PostsResponse> postByDate(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsByDate(postRequest, RequestKey.DATE);
+        PostsResponse postsResponse = postService.getPostsByDate(postRequest, PostRequestKey.DATE);
         return checkPostResponseEntity(postsResponse);
     }
 
     @GetMapping("/post/byTag")
     public ResponseEntity<PostsResponse> postByTag(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsByTag(postRequest, RequestKey.TAG);
+        PostsResponse postsResponse = postService.getPostsByTag(postRequest, PostRequestKey.TAG);
         return checkPostResponseEntity(postsResponse);
     }
 

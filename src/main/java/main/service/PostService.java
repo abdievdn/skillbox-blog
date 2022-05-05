@@ -8,13 +8,12 @@ import main.model.Tag;
 import main.model.repository.PostCommentRepository;
 import main.model.repository.PostRepository;
 import main.api.request.PostRequest;
-import main.api.request.RequestKey;
+import main.api.request.PostRequestKey;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -22,20 +21,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Service
 public class PostService {
 
-    public static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    public static final String
-            RECENT = "recent",
-            EARLY = "early",
-            BEST = "best",
-            POPULAR = "popular";
-
     private final PostRepository postRepository;
     private final PostCommentRepository postCommentRepository;
-
-    private static final Comparator<PostResponse>
-            COMPARE_BY_TIME = (o1, o2) -> Long.compare(o2.getTimestamp(), o1.getTimestamp()),
-            COMPARE_BY_LIKE_COUNT = (o1, o2) -> Integer.compare(o2.getLikeCount(), o1.getLikeCount()),
-            COMPARE_BY_COMMENT_COUNT = (o1, o2) -> Integer.compare(o2.getCommentCount(), o1.getCommentCount());
 
     public PostService(PostRepository postRepository, PostCommentRepository postCommentRepository) {
         this.postRepository = postRepository;
@@ -45,31 +32,31 @@ public class PostService {
     public PostsResponse getActualPosts(PostRequest postRequest) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse);
-        sortPostsByMode(postRequest.getMode(), posts);
+        sortPostsByMode(postRequest.getMode().toUpperCase(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse searchPosts(PostRequest postRequest, RequestKey key) {
+    public PostsResponse searchPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getQuery(), key);
-        sortPostsByMode(RECENT, posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsByDate(PostRequest postRequest, RequestKey key) {
+    public PostsResponse getPostsByDate(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getDate(), key);
-        sortPostsByMode(RECENT, posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsByTag(PostRequest postRequest, RequestKey key) {
+    public PostsResponse getPostsByTag(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
-        sortPostsByMode(RECENT, posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -122,12 +109,12 @@ public class PostService {
         Map<String, Integer> calendarPosts = new TreeMap<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!isActual(post)) {
+            if (isNotActual(post)) {
                 continue;
             }
             LocalDateTime postDate = post.getTime();
             calendarYears.add(postDate.getYear());
-            String postDateFormat = DATE_FORMAT.format(postDate);
+            String postDateFormat = postDate.toLocalDate().toString();
             if (calendarPosts.containsKey(postDateFormat)) {
                 calendarPosts.put(postDateFormat, calendarPosts.get(postDateFormat) + 1);
             } else {
@@ -144,7 +131,7 @@ public class PostService {
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!isActual(post)) {
+            if (isNotActual(post)) {
                 continue;
             }
             postExtraction(posts, post);
@@ -154,28 +141,26 @@ public class PostService {
         return posts;
     }
 
-    private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, RequestKey key) {
+    private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, PostRequestKey key) {
         int count = 0;
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!isActual(post)) {
+            if (isNotActual(post)) {
                 continue;
             }
-
-            if (key.equals(RequestKey.SEARCH)) {
+            if (key.equals(PostRequestKey.SEARCH)) {
                 String text = post.getText().toLowerCase();
                 if (!text.contains(value.toLowerCase())) {
                     continue;
                 }
             }
-            if (key.equals(RequestKey.DATE)) {
-                String dateFromPost = DATE_FORMAT.format(post.getTime());
-                if (!value.equals(dateFromPost)) {
+            if (key.equals(PostRequestKey.DATE)) {
+                if (!value.equals(post.getTime().toLocalDate().toString())) {
                     continue;
                 }
             }
-            if (key.equals(RequestKey.TAG)) {
+            if (key.equals(PostRequestKey.TAG)) {
                 boolean noTag = true;
                 for (Tag tag : post.getTags()) {
                     if (value.equals(tag.getName())) {
@@ -203,7 +188,7 @@ public class PostService {
         user.setName(post.getUser().getName());
         postResponse.setUser(user);
         postResponse.setTittle(post.getTitle());
-        postResponse.setAnnounce(announce(post.getText(), 0, 150));
+        postResponse.setAnnounce(announce(post.getText()));
         postResponse.setLikeCount(0); // todo
         postResponse.setDislikeCount(0); //todo
         postResponse.setCommentCount(0); //todo
@@ -216,27 +201,27 @@ public class PostService {
         return zdt.toInstant().toEpochMilli() / 1000;
     }
 
-    private boolean isActual(Post post) {
-        return post.getModerationStatus().equals(ModerationStatus.ACCEPTED) && post.isActive();
+    private boolean isNotActual(Post post) {
+        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || !post.isActive();
     }
 
-    private String announce(String text, int start, int end) {
-        return text.substring(start, end).concat("...");
+    private String announce(String text) {
+        return text.substring(0, 150).concat("...");
     }
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {
-        switch (mode) {
+        switch (PostSortOrder.valueOf(mode)) {
             case RECENT:
-                posts.sort(COMPARE_BY_TIME);
+                posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getTimestamp)));
                 break;
             case EARLY:
-                posts.sort(Collections.reverseOrder(COMPARE_BY_TIME));
+                posts.sort(Comparator.comparing(PostResponse::getTimestamp));
                 break;
             case BEST:
-                posts.sort(COMPARE_BY_LIKE_COUNT);
+                posts.sort(Comparator.comparing(PostResponse::getLikeCount));
                 break;
             case POPULAR:
-                posts.sort(COMPARE_BY_COMMENT_COUNT);
+                posts.sort(Comparator.comparing(PostResponse::getViewCount));
                 break;
             default:
                 break;

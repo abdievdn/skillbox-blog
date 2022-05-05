@@ -8,4 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Integer> {
+    Optional<CaptchaCode> findByCode(String code);
 }

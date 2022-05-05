@@ -6,6 +6,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  mvc:
+  format:
+    date=yyyy-MM-dd
+    date-time=yyyy-MM-dd HH:mm:ss
+    time=HH:mm:ss
 
 blog:
   title: DevPub
