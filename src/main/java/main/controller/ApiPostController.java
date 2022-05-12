@@ -51,6 +51,12 @@ public class ApiPostController {
         return ResponseEntity.ok(postByIdResponse);
     }
 
+    @GetMapping("/post/my")
+    public ResponseEntity<PostsResponse> postMy(PostRequest postRequest) {
+        PostsResponse postsResponse = postService.getPostsMy(postRequest, PostRequestKey.MY);
+        return checkPostResponseEntity(postsResponse);
+    }
+
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> calendar() {
         CalendarResponse calendarResponse = postService.getYears();

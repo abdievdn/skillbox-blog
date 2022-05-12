@@ -5,8 +5,10 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RegisterResponse {
+public class ProfileMyErrorResponse {
 
-    private boolean result;
-    private RegisterErrorResponse errors;
+    private String email;
+    private String photo;
+    private String name;
+    private String password;
 }

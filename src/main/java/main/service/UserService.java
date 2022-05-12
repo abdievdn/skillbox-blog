@@ -1,6 +1,8 @@
 package main.service;
 
-import lombok.AllArgsConstructor;
+import main.api.request.ProfileMyRequest;
+import main.controller.advice.ProfileMyError;
+import main.controller.advice.ProfileMyException;
 import main.controller.advice.RegisterError;
 import main.controller.advice.RegisterException;
 import main.api.response.*;
@@ -16,18 +18,31 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 public class UserService {
 
+    public static final int PHOTO_LIMIT_WEIGHT = 5242880;
     private final UserRepository userRepository;
     private final CaptchaCodeRepository captchaRepository;
     private final AuthenticationManager authenticationManager;
+
+    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager) {
+        this.userRepository = userRepository;
+        this.captchaRepository = captchaRepository;
+        this.authenticationManager = authenticationManager;
+    }
+
+    private final static String REGEX_NAME = "\\w+\\s?\\w*";
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
         RegisterResponse registerResponse = new RegisterResponse();
@@ -43,7 +58,7 @@ public class UserService {
             throw new RegisterException(RegisterError.CAPTCHA);
         }
         String userName = registerRequest.getName();
-        if (userName.isEmpty() || !userName.matches("\\w+\\s?\\w*")) {
+        if (userName.isEmpty() || !userName.matches(REGEX_NAME)) {
             throw new RegisterException(RegisterError.NAME);
         }
         String userPassword = registerRequest.getPassword();
@@ -98,16 +113,74 @@ public class UserService {
         return logoutResponse;
     }
 
+    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest) throws ProfileMyException {
+        ProfileMyResponse profileMyResponse = new ProfileMyResponse();
+        String authorizedUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!profileMyRequest.getEmail().equals(authorizedUser)) {
+            if (userRepository.findByEmail(profileMyRequest.getEmail()).isPresent()) {
+                throw new ProfileMyException(ProfileMyError.EMAIL);
+            }
+        }
+        if (profileMyRequest.getName() == null || !profileMyRequest.getName().matches(REGEX_NAME)) {
+            throw new ProfileMyException(ProfileMyError.NAME);
+        }
+        if (profileMyRequest.getPassword() != null && profileMyRequest.getPassword().length() < 6) {
+            throw new ProfileMyException(ProfileMyError.PASSWORD);
+        }
+        User user = userRepository.findByEmail(authorizedUser).orElseThrow();
+        if (!profileMyRequest.getEmail().equals(user.getEmail())) {
+            user.setEmail(profileMyRequest.getEmail());
+//            SecurityContextHolder.setContext();
+        }
+        if (!profileMyRequest.getName().equals(user.getName())) {
+            user.setName(profileMyRequest.getName());
+        }
+        if (profileMyRequest.getPassword() != null) {
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
+        }
+        if (profileMyRequest.getRemovePhoto() == 1) {
+            user.setPhoto("");
+        }
+        profileMyResponse.setResult(true);
+
+        MultipartFile photo = profileMyRequest.getPhoto();
+        if (photo != null) {
+            try {
+                if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
+                    throw new ProfileMyException(ProfileMyError.PHOTO);
+                }
+                BufferedImage photoInput = ImageIO.read(photo.getInputStream());
+                BufferedImage photoOutput = new BufferedImage(90, 90, photoInput.getType());
+                Graphics2D avatar = photoOutput.createGraphics();
+                avatar.drawImage(photoInput, 0, 0, 90, 90, null);
+                avatar.dispose();
+                File uploadDir = new File("src\\main\\resources\\static\\avatars\\");
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
+                String filename = photo.getOriginalFilename();
+                String formatName = filename.substring(filename.lastIndexOf('.') + 1);
+                ImageIO.write(photoOutput, formatName, new File(uploadDir, filename));
+                user.setPhoto("/avatars/" + filename);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        userRepository.save(user);
+        return profileMyResponse;
+    }
+
     private void createLoginResponse(LoginResponse loginResponse, String email) {
-        Optional<User> user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email).orElseThrow();
         UserResponse userResponse = new UserResponse();
-        userResponse.setId(user.get().getId());
-        userResponse.setName(user.get().getName());
-        userResponse.setPhoto(user.get().getPhoto());
-        userResponse.setEmail(user.get().getEmail());
-        userResponse.setModeration(isModerator(user.get()));
-        userResponse.setModerationCount(user.get().getModerationCount());
-        userResponse.setSettings(isModerator(user.get()));
+        userResponse.setId(user.getId());
+        userResponse.setName(user.getName());
+        userResponse.setPhoto(user.getPhoto());
+        userResponse.setEmail(user.getEmail());
+        userResponse.setModeration(isModerator(user));
+        userResponse.setModerationCount(user.getModerationCount());
+        userResponse.setSettings(isModerator(user));
         loginResponse.setResult(true);
         loginResponse.setUser(userResponse);
     }

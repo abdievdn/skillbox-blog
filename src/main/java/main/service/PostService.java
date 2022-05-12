@@ -61,45 +61,50 @@ public class PostService {
         return postsResponse;
     }
 
+    public PostsResponse getPostsMy(PostRequest postRequest, PostRequestKey key) {
+        PostsResponse postsResponse = new PostsResponse();
+//        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
+//        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
+//        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
+        return postsResponse;
+    }
+
     public PostByIdResponse getPostById(int id) {
         PostByIdResponse postByIdResponse = new PostByIdResponse();
-        Optional<Post> post = postRepository.findById(id);
-        if (post.isPresent()) {
-            postByIdResponse.setId(id);
-            postByIdResponse.setTimestamp(calculateTimestamp(post.get().getTime()));
-            UserResponse user = new UserResponse();
-            user.setId(post.get().getUser().getId());
-            user.setName(post.get().getUser().getName());
-            postByIdResponse.setUser(user);
-            postByIdResponse.setTittle(post.get().getTitle());
-            postByIdResponse.setText(post.get().getText());
-            postByIdResponse.setLikeCount(0); // todo
-            postByIdResponse.setDislikeCount(0); //todo
-            postByIdResponse.setViewCount(0); // todo
-
-            PostCommentResponse postCommentResponse = new PostCommentResponse();
-            List<PostCommentResponse> commentsToPost = new CopyOnWriteArrayList<>();
-            Iterable<PostComment> comments = postCommentRepository.findAll();
-            for (PostComment comment : comments) {
-                if (comment.getPost().getId() == post.get().getId()) {
-                    postCommentResponse.setId(comment.getId());
-                    postCommentResponse.setTimestamp(calculateTimestamp(comment.getTime()));
-                    postCommentResponse.setText(comment.getText());
-                    UserResponse userToComment = new UserResponse();
-                    userToComment.setId(comment.getUser().getId());
-                    userToComment.setName(comment.getUser().getName());
-                    userToComment.setPhoto(comment.getUser().getPhoto());
-                    postCommentResponse.setUser(userToComment);
-                    commentsToPost.add(postCommentResponse);
-                }
+        Post post = postRepository.findById(id).orElseThrow();
+        postByIdResponse.setId(id);
+        postByIdResponse.setTimestamp(calculateTimestamp(post.getTime()));
+        UserResponse user = new UserResponse();
+        user.setId(post.getUser().getId());
+        user.setName(post.getUser().getName());
+        postByIdResponse.setUser(user);
+        postByIdResponse.setTittle(post.getTitle());
+        postByIdResponse.setText(post.getText());
+        postByIdResponse.setLikeCount(0); // todo
+        postByIdResponse.setDislikeCount(0); //todo
+        postByIdResponse.setViewCount(0); // todo
+        PostCommentResponse postCommentResponse = new PostCommentResponse();
+        List<PostCommentResponse> commentsToPost = new CopyOnWriteArrayList<>();
+        Iterable<PostComment> comments = postCommentRepository.findAll();
+        for (PostComment comment : comments) {
+            if (comment.getPost().getId() == post.getId()) {
+                postCommentResponse.setId(comment.getId());
+                postCommentResponse.setTimestamp(calculateTimestamp(comment.getTime()));
+                postCommentResponse.setText(comment.getText());
+                UserResponse userToComment = new UserResponse();
+                userToComment.setId(comment.getUser().getId());
+                userToComment.setName(comment.getUser().getName());
+                userToComment.setPhoto(comment.getUser().getPhoto());
+                postCommentResponse.setUser(userToComment);
+                commentsToPost.add(postCommentResponse);
             }
-            postByIdResponse.setComments(commentsToPost);
-            Set<String> tagsToPost = new CopyOnWriteArraySet<>();
-            for (Tag tag : post.get().getTags()) {
-                tagsToPost.add(tag.getName());
-            }
-            postByIdResponse.setTags(tagsToPost);
         }
+        postByIdResponse.setComments(commentsToPost);
+        Set<String> tagsToPost = new CopyOnWriteArraySet<>();
+        for (Tag tag : post.getTags()) {
+            tagsToPost.add(tag.getName());
+        }
+        postByIdResponse.setTags(tagsToPost);
         return postByIdResponse;
     }
 

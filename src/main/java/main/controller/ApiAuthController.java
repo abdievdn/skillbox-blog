@@ -2,12 +2,10 @@ package main.controller;
 
 import lombok.AllArgsConstructor;
 import main.api.request.LoginRequest;
+import main.api.request.ProfileMyRequest;
+import main.api.response.*;
 import main.controller.advice.RegisterException;
 import main.api.request.RegisterRequest;
-import main.api.response.CaptchaCodeResponse;
-import main.api.response.LoginResponse;
-import main.api.response.LogoutResponse;
-import main.api.response.RegisterResponse;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -68,4 +66,6 @@ public class ApiAuthController {
         }
         return ResponseEntity.ok(logoutResponse);
     }
+
+
 }

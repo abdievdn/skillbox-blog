@@ -6,10 +6,10 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PostRequest {
-    private int offset = 0;
-    private int limit = 10;
-    private String mode = "recent";
-    private String query = null;
-    private String date = null;
-    private String tag = null;
+    private int offset;
+    private int limit;
+    private String mode;
+    private String query;
+    private String date;
+    private String tag;
 }
