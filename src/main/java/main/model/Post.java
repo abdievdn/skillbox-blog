@@ -19,7 +19,7 @@ public class Post {
     private int id;
 
     @Column(nullable = false, columnDefinition = "TINYINT", name = "is_active")
-    private boolean isActive;
+    private short isActive;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "ENUM('NEW','ACCEPTED','DECLINED')", name = "moderation_status")

@@ -68,7 +68,7 @@ public class TagService {
         int count = 0;
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!post.isActive() || !post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
+            if (post.getIsActive() != 1 || !post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
                 continue;
             }
             count++;

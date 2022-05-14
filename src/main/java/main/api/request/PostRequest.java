@@ -12,4 +12,5 @@ public class PostRequest {
     private String query;
     private String date;
     private String tag;
+    private String status;
 }

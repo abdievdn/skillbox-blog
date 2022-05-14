@@ -20,7 +20,7 @@ public class ApiPostController {
 
     @GetMapping("/post")
     public ResponseEntity<PostsResponse> post(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getActualPosts(postRequest);
+        PostsResponse postsResponse = postService.getActualPosts(postRequest, PostRequestKey.ALL);
         return checkPostResponseEntity(postsResponse);
     }
 
@@ -46,14 +46,14 @@ public class ApiPostController {
     public ResponseEntity<PostByIdResponse> postById(@PathVariable int ID) {
         PostByIdResponse postByIdResponse = postService.getPostById(ID);
         if (postByIdResponse == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(postByIdResponse);
     }
 
     @GetMapping("/post/my")
     public ResponseEntity<PostsResponse> postMy(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsMy(postRequest, PostRequestKey.MY);
+        PostsResponse postsResponse = postService.getPostsMy(postRequest);
         return checkPostResponseEntity(postsResponse);
     }
 

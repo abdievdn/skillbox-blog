@@ -5,7 +5,6 @@ import main.security.Role;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @NoArgsConstructor
 @Getter
@@ -20,7 +19,7 @@ public class User {
     private int id;
 
     @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
-    private int isModerator;
+    private short isModerator;
 
     @Column(nullable = false, name = "moderation_count")
     private int moderationCount;

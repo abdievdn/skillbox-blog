@@ -1,5 +1,6 @@
 package main.service;
 
+import main.api.request.PostRequestStatus;
 import main.api.response.*;
 import main.model.ModerationStatus;
 import main.model.Post;
@@ -9,6 +10,7 @@ import main.model.repository.PostCommentRepository;
 import main.model.repository.PostRepository;
 import main.api.request.PostRequest;
 import main.api.request.PostRequestKey;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,10 +31,10 @@ public class PostService {
         this.postCommentRepository = postCommentRepository;
     }
 
-    public PostsResponse getActualPosts(PostRequest postRequest) {
+    public PostsResponse getActualPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse);
-        sortPostsByMode(postRequest.getMode().toUpperCase(), posts);
+        List<PostResponse> posts = actualPosts(postsResponse, "", key);
+        sortPostsByMode(postRequest.getMode(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -40,7 +42,7 @@ public class PostService {
     public PostsResponse searchPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getQuery(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
+        sortPostsByMode(PostSortOrder.recent.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -48,7 +50,7 @@ public class PostService {
     public PostsResponse getPostsByDate(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getDate(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
+        sortPostsByMode(PostSortOrder.recent.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -56,16 +58,40 @@ public class PostService {
     public PostsResponse getPostsByTag(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
+        sortPostsByMode(PostSortOrder.recent.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsMy(PostRequest postRequest, PostRequestKey key) {
+    public PostsResponse getPostsMy(PostRequest postRequest) {
+        int count = 0;
         PostsResponse postsResponse = new PostsResponse();
-//        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
-//        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-//        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
+        String authorizedUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<PostResponse> posts = new CopyOnWriteArrayList<>();
+        Iterable<Post> postIterable = postRepository.findAll();
+        for (Post post: postIterable) {
+            if (!post.getUser().getEmail().equals(authorizedUser)) continue;
+            switch (PostRequestStatus.valueOf(postRequest.getStatus())) {
+                case inactive:
+                    if (post.getIsActive() == 1) continue;
+                    break;
+                case pending:
+                    if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
+                    break;
+                case declined:
+                    if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
+                    break;
+                case published:
+                    if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
+                    break;
+                default: break;
+            }
+            postExtraction(posts, post);
+            count++;
+        }
+        postsResponse.setCount(count);
+        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
@@ -114,9 +140,7 @@ public class PostService {
         Map<String, Integer> calendarPosts = new TreeMap<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (isNotActual(post)) {
-                continue;
-            }
+            if (isNotActual(post)) continue;
             LocalDateTime postDate = post.getTime();
             calendarYears.add(postDate.getYear());
             String postDateFormat = postDate.toLocalDate().toString();
@@ -131,51 +155,31 @@ public class PostService {
         return calendarResponse;
     }
 
-    private List<PostResponse> actualPosts(PostsResponse postsResponse) {
-        int count = 0;
-        List<PostResponse> posts = new CopyOnWriteArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (isNotActual(post)) {
-                continue;
-            }
-            postExtraction(posts, post);
-            count++;
-        }
-        postsResponse.setCount(count);
-        return posts;
-    }
-
     private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, PostRequestKey key) {
         int count = 0;
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (isNotActual(post)) {
-                continue;
-            }
-            if (key.equals(PostRequestKey.SEARCH)) {
-                String text = post.getText().toLowerCase();
-                if (!text.contains(value.toLowerCase())) {
-                    continue;
-                }
-            }
-            if (key.equals(PostRequestKey.DATE)) {
-                if (!value.equals(post.getTime().toLocalDate().toString())) {
-                    continue;
-                }
-            }
-            if (key.equals(PostRequestKey.TAG)) {
-                boolean noTag = true;
-                for (Tag tag : post.getTags()) {
-                    if (value.equals(tag.getName())) {
-                        noTag = false;
-                        break;
+            if (isNotActual(post)) continue;
+            switch (key) {
+                case SEARCH:
+                    String text = post.getText().toLowerCase();
+                    if (!text.contains(value.toLowerCase())) continue;
+                    break;
+                case DATE:
+                    if (!value.equals(post.getTime().toLocalDate().toString())) continue;
+                    break;
+                case TAG:
+                    boolean noTag = true;
+                    for (Tag tag : post.getTags()) {
+                        if (value.equals(tag.getName())) {
+                            noTag = false;
+                            break;
+                        }
                     }
-                }
-                if (noTag) {
-                    continue;
-                }
+                    if (noTag) continue;
+                    break;
+                default: break;
             }
             postExtraction(posts, post);
             count++;
@@ -207,7 +211,7 @@ public class PostService {
     }
 
     private boolean isNotActual(Post post) {
-        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || !post.isActive();
+        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() !=1;
     }
 
     private String announce(String text) {
@@ -216,20 +220,19 @@ public class PostService {
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {
         switch (PostSortOrder.valueOf(mode)) {
-            case RECENT:
+            case recent:
                 posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getTimestamp)));
                 break;
-            case EARLY:
+            case early:
                 posts.sort(Comparator.comparing(PostResponse::getTimestamp));
                 break;
-            case BEST:
+            case best:
                 posts.sort(Comparator.comparing(PostResponse::getLikeCount));
                 break;
-            case POPULAR:
+            case popular:
                 posts.sort(Comparator.comparing(PostResponse::getViewCount));
                 break;
-            default:
-                break;
+            default: break;
         }
     }
 

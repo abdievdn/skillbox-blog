@@ -12,5 +12,4 @@ public class ProfileMyRequest {
     private String email;
     private String password;
     private int removePhoto;
-    private MultipartFile photo;
 }

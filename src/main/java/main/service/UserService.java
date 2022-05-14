@@ -12,9 +12,11 @@ import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
 import main.api.request.LoginRequest;
 import main.api.request.RegisterRequest;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -67,10 +69,10 @@ public class UserService {
         }
         User user = new User();
         user.setEmail(registerRequest.getEmail());
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
         user.setPassword(passwordEncoder.encode(userPassword));
         user.setName(userName);
-        user.setIsModerator(0);
+        user.setIsModerator((short) 0);
         user.setModerationCount(0);
         user.setPhoto("");
         user.setRegTime(LocalDateTime.now());
@@ -113,7 +115,7 @@ public class UserService {
         return logoutResponse;
     }
 
-    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest) throws ProfileMyException {
+    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo) throws ProfileMyException {
         ProfileMyResponse profileMyResponse = new ProfileMyResponse();
         String authorizedUser = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!profileMyRequest.getEmail().equals(authorizedUser)) {
@@ -130,13 +132,12 @@ public class UserService {
         User user = userRepository.findByEmail(authorizedUser).orElseThrow();
         if (!profileMyRequest.getEmail().equals(user.getEmail())) {
             user.setEmail(profileMyRequest.getEmail());
-//            SecurityContextHolder.setContext();
         }
         if (!profileMyRequest.getName().equals(user.getName())) {
             user.setName(profileMyRequest.getName());
         }
         if (profileMyRequest.getPassword() != null) {
-            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
             user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
         }
         if (profileMyRequest.getRemovePhoto() == 1) {
@@ -144,7 +145,6 @@ public class UserService {
         }
         profileMyResponse.setResult(true);
 
-        MultipartFile photo = profileMyRequest.getPhoto();
         if (photo != null) {
             try {
                 if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
