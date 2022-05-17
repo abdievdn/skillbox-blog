@@ -1,9 +1,10 @@
 package main.model;
 
 import lombok.*;
+import main.security.Role;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Getter
@@ -18,13 +19,13 @@ public class User {
     private int id;
 
     @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
-    private boolean isModerator;
+    private short isModerator;
 
     @Column(nullable = false, name = "moderation_count")
     private int moderationCount;
 
     @Column(nullable = false, name = "reg_time")
-    private Date regTime;
+    private LocalDateTime regTime;
 
     @Column(nullable = false)
     private String name;
@@ -39,12 +40,11 @@ public class User {
 
     private String photo;
 
-    public User(boolean isModerator, int moderationCount, Date regTime, String name, String email, String password) {
-        this.isModerator = isModerator;
-        this.moderationCount = moderationCount;
-        this.regTime = regTime;
-        this.name = name;
-        this.email = email;
-        this.password = password;
+    @Transient
+    private Role role;
+
+    public Role getRole() {
+        return isModerator == 1 ? Role.MODERATOR : Role.USER;
     }
+
 }

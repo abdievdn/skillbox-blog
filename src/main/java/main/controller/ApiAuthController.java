@@ -1,33 +1,35 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.response.*;
+import main.api.request.LoginRequest;
+import main.api.request.ProfileMyRequest;
+import main.api.response.*;
+import main.controller.advice.RegisterException;
+import main.api.request.RegisterRequest;
 import main.service.CaptchaCodeService;
-import main.service.CheckService;
 import main.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class ApiAuthController {
 
-    private final CheckService checkService;
     private final CaptchaCodeService captchaService;
     private final UserService userService;
 
     @GetMapping("/check")
-    public ResponseEntity<CheckResponse> check() {
-        CheckResponse checkResponse = checkService.checkUser();
-        if (checkResponse == null) {
+    public ResponseEntity<LoginResponse> check(Principal principal) {
+        LoginResponse loginResponse = userService.checkUser(principal);
+        if (loginResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(checkResponse);
+        return ResponseEntity.ok(loginResponse);
     }
 
     @GetMapping("/captcha")
@@ -40,17 +42,32 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public RegisterResultResponse register(RegisterResponse registerResponse) {
-        return userService.userRegister(registerResponse);
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) throws RegisterException {
+        RegisterResponse registerResponse = userService.userRegister(registerRequest);
+        if (registerResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(registerResponse);
     }
 
     @PostMapping("/login")
-    public UserResponse login(UserResponse userResponse) {
-        return null;
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+        LoginResponse loginResponse = userService.userLogin(loginRequest);
+        if (loginResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(loginResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/logout")
-    public UserResponse logout(UserResponse userResponse) {
-        return null;
+    public ResponseEntity<LogoutResponse> logout() {
+        LogoutResponse logoutResponse = userService.userLogout();
+        if (logoutResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(logoutResponse);
     }
+
+
 }

@@ -3,10 +3,10 @@ package main.service;
 import main.model.ModerationStatus;
 import main.model.Post;
 import main.model.Tag;
-import main.repository.PostRepository;
-import main.repository.TagRepository;
-import main.response.TagResponse;
-import main.response.TagsResponse;
+import main.model.repository.PostRepository;
+import main.model.repository.TagRepository;
+import main.api.response.TagResponse;
+import main.api.response.TagsResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -68,7 +68,7 @@ public class TagService {
         int count = 0;
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!post.isActive() || !post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
+            if (post.getIsActive() != 1 || !post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
                 continue;
             }
             count++;
