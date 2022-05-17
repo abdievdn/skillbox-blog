@@ -12,17 +12,16 @@ import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
 import main.api.request.LoginRequest;
 import main.api.request.RegisterRequest;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -115,9 +114,9 @@ public class UserService {
         return logoutResponse;
     }
 
-    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo) throws ProfileMyException {
+    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo, Principal principal) throws ProfileMyException {
         ProfileMyResponse profileMyResponse = new ProfileMyResponse();
-        String authorizedUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        String authorizedUser = principal.getName();
         if (!profileMyRequest.getEmail().equals(authorizedUser)) {
             if (userRepository.findByEmail(profileMyRequest.getEmail()).isPresent()) {
                 throw new ProfileMyException(ProfileMyError.EMAIL);
@@ -156,9 +155,6 @@ public class UserService {
                 avatar.drawImage(photoInput, 0, 0, 90, 90, null);
                 avatar.dispose();
                 File uploadDir = new File("src\\main\\resources\\static\\avatars\\");
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
-                }
                 String filename = photo.getOriginalFilename();
                 String formatName = filename.substring(filename.lastIndexOf('.') + 1);
                 ImageIO.write(photoOutput, formatName, new File(uploadDir, filename));

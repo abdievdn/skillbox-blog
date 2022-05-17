@@ -10,6 +10,7 @@ import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -58,6 +59,7 @@ public class ApiAuthController {
         return ResponseEntity.ok(loginResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/logout")
     public ResponseEntity<LogoutResponse> logout() {
         LogoutResponse logoutResponse = userService.userLogout();

@@ -9,6 +9,7 @@ import main.service.PostService;
 import main.api.request.PostRequestKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
@@ -51,6 +52,7 @@ public class ApiPostController {
         return ResponseEntity.ok(postByIdResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/post/my")
     public ResponseEntity<PostsResponse> postMy(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getPostsMy(postRequest);
