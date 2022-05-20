@@ -8,7 +8,7 @@ public class PostResponse {
     private int id;
     private long timestamp;
     private UserResponse user; // id, name
-    private String tittle;
+    private String title;
     private String announce;
     private int likeCount;
     private int dislikeCount;

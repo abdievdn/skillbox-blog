@@ -1,16 +1,22 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
+import main.api.request.PostAddEditRequest;
 import main.api.request.PostRequest;
 import main.api.response.CalendarResponse;
+import main.api.response.PostAddEditResponse;
 import main.api.response.PostByIdResponse;
 import main.api.response.PostsResponse;
+import main.controller.advice.exception.PostAddEditException;
 import main.service.PostService;
 import main.api.request.PostRequestKey;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @AllArgsConstructor
 @RestController
@@ -46,32 +52,56 @@ public class ApiPostController {
     @GetMapping("/post/{ID}")
     public ResponseEntity<PostByIdResponse> postById(@PathVariable int ID) {
         PostByIdResponse postByIdResponse = postService.getPostById(ID);
-        if (postByIdResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        if (postByIdResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return ResponseEntity.ok(postByIdResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/post/my")
-    public ResponseEntity<PostsResponse> postMy(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsMy(postRequest);
+    public ResponseEntity<PostsResponse> postMy(PostRequest postRequest, Principal principal) {
+        PostsResponse postsResponse = postService.getPostsMy(postRequest, principal);
         return checkPostResponseEntity(postsResponse);
     }
+
+//    @PreAuthorize("hasAuthority('user:moderate')")
+//    @GetMapping("/post/moderate")
+//    public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
+//        PostsResponse postsResponse = postService.getPostsMy(postRequest);
+//        if (principal == null) {
+//            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+//        }
+//        return checkPostResponseEntity(postsResponse);
+//    }
 
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> calendar() {
         CalendarResponse calendarResponse = postService.getYears();
-        if (calendarResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        if (calendarResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return ResponseEntity.ok(calendarResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping(value = "/post", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PostAddEditResponse> postAdd(@RequestBody PostAddEditRequest postAddRequest,
+                                                       Principal principal) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.addPost(postAddRequest, principal);
+        if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.ok(postAddResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PutMapping(value = "/post/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PostAddEditResponse> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
+                                                        @PathVariable int ID,
+                                                        Principal principal) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID, principal);
+        if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.ok(postAddResponse);
+    }
+
+
     private ResponseEntity<PostsResponse> checkPostResponseEntity(PostsResponse postsResponse) {
-        if (postsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        if (postsResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return ResponseEntity.ok(postsResponse);
     }
 }

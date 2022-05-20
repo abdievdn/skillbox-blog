@@ -2,7 +2,7 @@ package main.controller.advice;
 
 import main.api.response.RegisterErrorResponse;
 import main.api.response.RegisterResponse;
-import org.springframework.http.HttpStatus;
+import main.controller.advice.exception.RegisterException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +33,6 @@ public class RegisterAdvice {
         }
         registerResponse.setResult(false);
         registerResponse.setErrors(registerErrorsResponse);
-        return new ResponseEntity<>(registerResponse, HttpStatus.OK);
+        return ResponseEntity.ok(registerResponse);
     }
 }

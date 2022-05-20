@@ -1,6 +1,7 @@
-package main.controller.advice;
+package main.controller.advice.exception;
 
 import lombok.Data;
+import main.controller.advice.error.ProfileMyError;
 
 @Data
 public class ProfileMyException extends Exception {

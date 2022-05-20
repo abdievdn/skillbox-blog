@@ -1,10 +1,10 @@
 package main.service;
 
 import main.api.request.ProfileMyRequest;
-import main.controller.advice.ProfileMyError;
-import main.controller.advice.ProfileMyException;
-import main.controller.advice.RegisterError;
-import main.controller.advice.RegisterException;
+import main.controller.advice.error.ProfileMyError;
+import main.controller.advice.exception.ProfileMyException;
+import main.controller.advice.error.RegisterError;
+import main.controller.advice.exception.RegisterException;
 import main.api.response.*;
 import main.model.CaptchaCode;
 import main.model.User;
@@ -12,6 +12,8 @@ import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
 import main.api.request.LoginRequest;
 import main.api.request.RegisterRequest;
+import main.service.util.ImageUtil;
+import main.service.util.TimestampUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,11 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpSession;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -32,7 +30,6 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    public static final int PHOTO_LIMIT_WEIGHT = 5242880;
     private final UserRepository userRepository;
     private final CaptchaCodeRepository captchaRepository;
     private final AuthenticationManager authenticationManager;
@@ -43,7 +40,8 @@ public class UserService {
         this.authenticationManager = authenticationManager;
     }
 
-    private final static String REGEX_NAME = "\\w+\\s?\\w*";
+    private final static String REGEX_NAME = "[\\w\\s\\S]+";
+    public static final int PHOTO_LIMIT_WEIGHT = 5242880;
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
         RegisterResponse registerResponse = new RegisterResponse();
@@ -114,7 +112,8 @@ public class UserService {
         return logoutResponse;
     }
 
-    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo, Principal principal) throws ProfileMyException {
+    public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo, Principal principal)
+            throws ProfileMyException, IOException {
         ProfileMyResponse profileMyResponse = new ProfileMyResponse();
         String authorizedUser = principal.getName();
         if (!profileMyRequest.getEmail().equals(authorizedUser)) {
@@ -145,23 +144,14 @@ public class UserService {
         profileMyResponse.setResult(true);
 
         if (photo != null) {
-            try {
-                if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
-                    throw new ProfileMyException(ProfileMyError.PHOTO);
-                }
-                BufferedImage photoInput = ImageIO.read(photo.getInputStream());
-                BufferedImage photoOutput = new BufferedImage(90, 90, photoInput.getType());
-                Graphics2D avatar = photoOutput.createGraphics();
-                avatar.drawImage(photoInput, 0, 0, 90, 90, null);
-                avatar.dispose();
-                File uploadDir = new File("src\\main\\resources\\static\\avatars\\");
-                String filename = photo.getOriginalFilename();
-                String formatName = filename.substring(filename.lastIndexOf('.') + 1);
-                ImageIO.write(photoOutput, formatName, new File(uploadDir, filename));
-                user.setPhoto("/avatars/" + filename);
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
+                throw new ProfileMyException(ProfileMyError.PHOTO);
             }
+            String path = "\\avatars\\";
+            String fileName = String.valueOf(user.getId());
+            String formatName = ImageUtil.getFormatName(photo);
+            ImageUtil.save(path, fileName, formatName, photo, 90, 90);
+            user.setPhoto(path.replace('\\', '/') + fileName + '.' + formatName);
         }
         userRepository.save(user);
         return profileMyResponse;

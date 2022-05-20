@@ -1,6 +1,7 @@
-package main.controller.advice;
+package main.controller.advice.exception;
 
 import lombok.Data;
+import main.controller.advice.error.RegisterError;
 
 @Data
 public class RegisterException extends Exception {

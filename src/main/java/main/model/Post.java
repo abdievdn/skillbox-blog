@@ -1,6 +1,7 @@
 package main.model;
 
 import lombok.*;
+import org.hibernate.annotations.SortNatural;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
+    @SortNatural
     private int id;
 
     @Column(nullable = false, columnDefinition = "TINYINT", name = "is_active")

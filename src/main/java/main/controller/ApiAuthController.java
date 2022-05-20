@@ -2,12 +2,12 @@ package main.controller;
 
 import lombok.AllArgsConstructor;
 import main.api.request.LoginRequest;
-import main.api.request.ProfileMyRequest;
 import main.api.response.*;
-import main.controller.advice.RegisterException;
+import main.controller.advice.exception.RegisterException;
 import main.api.request.RegisterRequest;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +42,8 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) throws RegisterException {
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest)
+            throws RegisterException, FileSizeLimitExceededException {
         RegisterResponse registerResponse = userService.userRegister(registerRequest);
         if (registerResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -59,9 +60,8 @@ public class ApiAuthController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/logout")
-    public ResponseEntity<LogoutResponse> logout() {
+    public ResponseEntity<LogoutResponse> logout(Principal principal) {
         LogoutResponse logoutResponse = userService.userLogout();
         if (logoutResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

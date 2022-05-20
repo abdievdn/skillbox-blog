@@ -1,4 +1,4 @@
-package main.controller.advice;
+package main.controller.advice.error;
 
 public enum ProfileMyError {
     EMAIL("Этот e-mail уже зарегистрирован"),

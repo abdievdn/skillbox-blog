@@ -2,7 +2,7 @@ package main.controller.advice;
 
 import main.api.response.ProfileMyErrorResponse;
 import main.api.response.ProfileMyResponse;
-import org.springframework.http.HttpStatus;
+import main.controller.advice.exception.ProfileMyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +33,6 @@ public class ProfileMyAdvice {
         }
         profileMyResponse.setResult(false);
         profileMyResponse.setErrors(profileMyErrorResponse);
-        return new ResponseEntity<>(profileMyResponse, HttpStatus.OK);
+        return ResponseEntity.ok(profileMyResponse);
     }
 }
