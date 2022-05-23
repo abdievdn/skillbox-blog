@@ -76,18 +76,53 @@ public class PostService {
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post: postIterable) {
             if (!post.getUser().getEmail().equals(authorizedUser)) continue;
-            switch (PostRequestStatus.valueOf(postRequest.getStatus())) {
-                case inactive:
+            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
+                case INACTIVE:
                     if (post.getIsActive() == 1) continue;
                     break;
-                case pending:
+                case PENDING:
                     if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
+                    if (post.getIsActive() != 1) continue;
                     break;
-                case declined:
+                case DECLINED:
                     if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
+                    if (post.getIsActive() != 1) continue;
                     break;
-                case published:
+                case PUBLISHED:
                     if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
+                    if (post.getIsActive() != 1) continue;
+                    break;
+                default: break;
+            }
+            postExtraction(posts, post);
+            count++;
+        }
+        postsResponse.setCount(count);
+        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
+        return postsResponse;
+    }
+
+    public PostsResponse getPostsModeration(PostRequest postRequest, Principal principal) {
+        int count = 0;
+        PostsResponse postsResponse = new PostsResponse();
+        String authorizedUser = principal.getName();
+        List<PostResponse> posts = new CopyOnWriteArrayList<>();
+        Iterable<Post> postIterable = postRepository.findAll();
+        for (Post post: postIterable) {
+            if (!post.getModerator().getEmail().equals(authorizedUser) ||
+                    (post.getModerator().getEmail() != null)) continue;
+            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
+                case NEW:
+//                    if (post.getIsActive() == 1) continue;
+                    break;
+                case ACCEPTED:
+//                    if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
+//                    if (post.getIsActive() != 1) continue;
+                    break;
+                case DECLINED:
+//                    if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
+//                    if (post.getIsActive() != 1) continue;
                     break;
                 default: break;
             }

@@ -63,15 +63,12 @@ public class ApiPostController {
         return checkPostResponseEntity(postsResponse);
     }
 
-//    @PreAuthorize("hasAuthority('user:moderate')")
-//    @GetMapping("/post/moderate")
-//    public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
-//        PostsResponse postsResponse = postService.getPostsMy(postRequest);
-//        if (principal == null) {
-//            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-//        }
-//        return checkPostResponseEntity(postsResponse);
-//    }
+    @PreAuthorize("hasAuthority('user:moderate')")
+    @GetMapping("/post/moderate")
+    public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
+        PostsResponse postsResponse = postService.getPostsModeration(postRequest, principal);
+        return checkPostResponseEntity(postsResponse);
+    }
 
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> calendar() {

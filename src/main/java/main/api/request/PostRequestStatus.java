@@ -1,8 +1,10 @@
 package main.api.request;
 
 public enum PostRequestStatus {
-    inactive,
-    pending,
-    declined,
-    published
+    INACTIVE,
+    PENDING,
+    DECLINED,
+    PUBLISHED,
+    ACCEPTED,
+    NEW
 }

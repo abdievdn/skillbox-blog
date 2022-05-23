@@ -1,6 +1,7 @@
 package main.service.util;
 
 import main.controller.advice.error.ProfileMyError;
+import main.controller.advice.exception.ImageUploadException;
 import main.controller.advice.exception.ProfileMyException;
 import org.springframework.util.MimeType;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,12 +14,12 @@ import java.io.IOException;
 
 public class ImageUtil {
 
-    public final static String DEFAULT_PATH = "src\\main\\resources\\static\\";
+    public final static String DEFAULT_PATH = "src\\main\\resources\\static\\img\\";
 
-    public static void save(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException, ProfileMyException {
+    public static void save(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
         if (!file.getContentType().equals("image/jpeg"))
             if (!file.getContentType().equals("image/png")) {
-                throw new ProfileMyException(ProfileMyError.PHOTO);
+                throw new IOException();
             }
         BufferedImage photoInput = ImageIO.read(file.getInputStream());
         if (width == 0 || height == 0) {

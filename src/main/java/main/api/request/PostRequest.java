@@ -1,6 +1,5 @@
 package main.api.request;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data

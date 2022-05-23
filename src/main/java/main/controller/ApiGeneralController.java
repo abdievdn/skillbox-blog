@@ -3,6 +3,7 @@ package main.controller;
 import lombok.AllArgsConstructor;
 import main.api.request.ProfileMyRequest;
 import main.api.response.*;
+import main.controller.advice.exception.ImageUploadException;
 import main.controller.advice.exception.ProfileMyException;
 import main.service.ImageService;
 import main.service.SettingsService;
@@ -78,7 +79,10 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping("/image")
-    public ResponseEntity<String> image(MultipartFile image) throws ProfileMyException, IOException {
+    public ResponseEntity<String> image(MultipartFile image) throws ImageUploadException, IOException {
+        if (image == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         return ResponseEntity.ok(imageService.uploadImage(image));
     }
 }
