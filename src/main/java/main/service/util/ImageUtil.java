@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public class ImageUtil {
 
-    public final static String DEFAULT_PATH = "src\\main\\resources\\static\\img\\";
+    public final static String DEFAULT_PATH = "src\\main\\resources\\static\\";
 
     public static void save(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
         if (!file.getContentType().equals("image/jpeg"))

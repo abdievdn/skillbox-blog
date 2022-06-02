@@ -1,14 +1,14 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
+import main.api.request.PostCommentAddRequest;
 import main.api.request.ProfileMyRequest;
+import main.api.request.SettingsRequest;
 import main.api.response.*;
 import main.controller.advice.exception.ImageUploadException;
+import main.controller.advice.exception.PostCommentAddException;
 import main.controller.advice.exception.ProfileMyException;
-import main.service.ImageService;
-import main.service.SettingsService;
-import main.service.TagService;
-import main.service.UserService;
+import main.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +29,8 @@ public class ApiGeneralController {
     private final TagService tagService;
     private final UserService userService;
     private final ImageService imageService;
+    private final PostCommentService postCommentService;
+    private final StatisticsService statisticsService;
 
     @GetMapping("/init")
     public InitResponse init() {
@@ -42,6 +44,33 @@ public class ApiGeneralController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(settingsResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:moderate')")
+    @PutMapping("/settings")
+    public ResponseEntity<String> settingsSave(@RequestBody SettingsRequest settingsRequest) {
+        settingsService.setGlobalSettings(settingsRequest);
+        return ResponseEntity.ok("");
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @GetMapping("/statistics/my")
+    public ResponseEntity<StatisticsResponse> statisticsMy(Principal principal) {
+        StatisticsResponse statisticsResponse = statisticsService.getStatisticsMy(principal);
+        if (statisticsResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(statisticsResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @GetMapping("/statistics/all")
+    public ResponseEntity<StatisticsResponse> statisticsAll(Principal principal) {
+        StatisticsResponse statisticsResponse = statisticsService.getStatisticsAll(principal);
+        if (statisticsResponse == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        return ResponseEntity.ok(statisticsResponse);
     }
 
     @GetMapping("/tag")
@@ -84,5 +113,15 @@ public class ApiGeneralController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(imageService.uploadImage(image));
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/comment")
+    public ResponseEntity<PostCommentAddResponse> comment(@RequestBody PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
+        PostCommentAddResponse postCommentAddResponse = postCommentService.addComment(postCommentAddRequest, principal);
+        if (postCommentAddResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(postCommentAddResponse);
     }
 }

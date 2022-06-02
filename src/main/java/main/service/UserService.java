@@ -14,6 +14,10 @@ import main.api.request.LoginRequest;
 import main.api.request.RegisterRequest;
 import main.service.util.ImageUtil;
 import main.service.util.TimestampUtil;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -147,6 +151,9 @@ public class UserService {
             if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
                 throw new ProfileMyException(ProfileMyError.PHOTO);
             }
+
+//            String rootPath = ApplicationContext.CLASSPATH_URL_PREFIX;
+//            System.out.println(rootPath);
             String path = "\\avatars\\";
             String fileName = String.valueOf(user.getId());
             String formatName = ImageUtil.getFormatName(photo);

@@ -1,12 +1,10 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
+import main.api.request.PostModerationRequest;
 import main.api.request.PostAddEditRequest;
 import main.api.request.PostRequest;
-import main.api.response.CalendarResponse;
-import main.api.response.PostAddEditResponse;
-import main.api.response.PostByIdResponse;
-import main.api.response.PostsResponse;
+import main.api.response.*;
 import main.controller.advice.exception.PostAddEditException;
 import main.service.PostService;
 import main.api.request.PostRequestKey;
@@ -64,7 +62,7 @@ public class ApiPostController {
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
-    @GetMapping("/post/moderate")
+    @GetMapping("/post/moderation")
     public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
         PostsResponse postsResponse = postService.getPostsModeration(postRequest, principal);
         return checkPostResponseEntity(postsResponse);
@@ -89,13 +87,19 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     @PutMapping(value = "/post/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostAddEditResponse> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
-                                                        @PathVariable int ID,
-                                                        Principal principal) throws PostAddEditException {
-        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID, principal);
+                                                        @PathVariable int ID) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID);
         if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return ResponseEntity.ok(postAddResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:moderate')")
+    @PostMapping(value = "/moderation")
+    public ResponseEntity<PostModerationResponse> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
+        PostModerationResponse postModerationResponse = postService.postModerate(postModerationRequest, principal);
+        if (postModerationResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.ok(postModerationResponse);
+    }
 
     private ResponseEntity<PostsResponse> checkPostResponseEntity(PostsResponse postsResponse) {
         if (postsResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

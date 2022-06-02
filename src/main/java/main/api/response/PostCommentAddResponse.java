@@ -5,6 +5,8 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ImageErrorResponse {
-    private String image;
+public class PostCommentAddResponse {
+    private Integer id;
+    private Boolean result;
+    private PostCommentAddErrorResponse errors;
 }
