@@ -68,6 +68,11 @@ public class ApiPostController {
         return checkPostResponseEntity(postsResponse);
     }
 
+    private ResponseEntity<PostsResponse> checkPostResponseEntity(PostsResponse postsResponse) {
+        if (postsResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.ok(postsResponse);
+    }
+
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> calendar() {
         CalendarResponse calendarResponse = postService.getYears();
@@ -101,8 +106,5 @@ public class ApiPostController {
         return ResponseEntity.ok(postModerationResponse);
     }
 
-    private ResponseEntity<PostsResponse> checkPostResponseEntity(PostsResponse postsResponse) {
-        if (postsResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        return ResponseEntity.ok(postsResponse);
-    }
+
 }

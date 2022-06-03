@@ -2,6 +2,7 @@ package main.controller;
 
 import lombok.AllArgsConstructor;
 import main.api.request.PostCommentAddRequest;
+import main.api.request.PostVoteRequest;
 import main.api.request.ProfileMyRequest;
 import main.api.request.SettingsRequest;
 import main.api.response.*;
@@ -27,10 +28,10 @@ public class ApiGeneralController {
     private final InitResponse initResponse;
     private final SettingsService settingsService;
     private final TagService tagService;
-    private final UserService userService;
     private final ImageService imageService;
     private final PostCommentService postCommentService;
     private final StatisticsService statisticsService;
+    private final PostVoteService postVoteService;
 
     @GetMapping("/init")
     public InitResponse init() {
@@ -83,30 +84,6 @@ public class ApiGeneralController {
     }
 
     @PreAuthorize("hasAuthority('user:write')")
-    @PostMapping(path = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ProfileMyResponse> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
-                                                     Principal principal) throws ProfileMyException, IOException {
-        ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, null, principal);
-        return checkProfileMy(profileMyResponse);
-    }
-
-    @PreAuthorize("hasAuthority('user:write')")
-    @PostMapping(path = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProfileMyResponse> profileMyPhoto(MultipartFile photo,
-                                                            ProfileMyRequest profileMyRequest,
-                                                            Principal principal) throws ProfileMyException, IOException {
-        ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, photo, principal);
-        return checkProfileMy(profileMyResponse);
-    }
-
-    private ResponseEntity<ProfileMyResponse> checkProfileMy(ProfileMyResponse profileMyResponse) {
-        if (profileMyResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(profileMyResponse);
-    }
-
-    @PreAuthorize("hasAuthority('user:write')")
     @PostMapping("/image")
     public ResponseEntity<String> image(MultipartFile image) throws ImageUploadException, IOException {
         if (image == null) {
@@ -123,5 +100,25 @@ public class ApiGeneralController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(postCommentAddResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/post/like")
+    public ResponseEntity<PostVoteResponse> like(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) 1, principal);
+        if (postVoteResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(postVoteResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/post/dislike")
+    public ResponseEntity<PostVoteResponse> dislike(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) -1, principal);
+        if (postVoteResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(postVoteResponse);
     }
 }

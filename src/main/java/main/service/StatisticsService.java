@@ -18,11 +18,13 @@ public class StatisticsService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final SettingsRepository settingsRepository;
+    private final PostVoteService postVoteService;
 
-    public StatisticsService(PostRepository postRepository, UserRepository userRepository, SettingsRepository settingsRepository) {
+    public StatisticsService(PostRepository postRepository, UserRepository userRepository, SettingsRepository settingsRepository, PostVoteService postVoteService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.settingsRepository = settingsRepository;
+        this.postVoteService = postVoteService;
     }
 
     public StatisticsResponse getStatisticsMy(Principal principal) {
@@ -41,7 +43,6 @@ public class StatisticsService {
         GlobalSettings settings = settingsRepository.findByCode(SettingsCode.STATISTICS_IS_PUBLIC.name()).orElseThrow();
         if (settings.getValue().equals("NO") && user.getIsModerator() != 1) return null;
         StatisticsResponse statisticsResponse = new StatisticsResponse();
-        statisticsResponse.setFirstPublication(0);
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
             statisticsExtraction(statisticsResponse, post);
@@ -51,9 +52,9 @@ public class StatisticsService {
 
     private void statisticsExtraction(StatisticsResponse statisticsResponse, Post post) {
         statisticsResponse.setPostsCount(statisticsResponse.getPostsCount() + 1);
-        statisticsResponse.setLikesCount(0); //todo
-        statisticsResponse.setDislikesCount(0); //todo
-        statisticsResponse.setViewsCount(post.getViewCount());
+        statisticsResponse.setLikesCount(postVoteService.getPostVoteCount(post.getId(), (short) 1) + statisticsResponse.getLikesCount());
+        statisticsResponse.setDislikesCount(postVoteService.getPostVoteCount(post.getId(), (short) -1) + statisticsResponse.getDislikesCount());
+        statisticsResponse.setViewsCount(post.getViewCount() + statisticsResponse.getViewsCount());
         long earlierPublication = TimestampUtil.encode(post.getTime());
         if (earlierPublication < statisticsResponse.getFirstPublication() || statisticsResponse.getFirstPublication() == 0) {
             statisticsResponse.setFirstPublication(earlierPublication);

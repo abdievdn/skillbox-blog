@@ -5,10 +5,7 @@ import main.api.response.*;
 import main.controller.advice.error.PostAddEditError;
 import main.controller.advice.exception.PostAddEditException;
 import main.model.*;
-import main.model.repository.PostCommentRepository;
-import main.model.repository.PostRepository;
-import main.model.repository.TagRepository;
-import main.model.repository.UserRepository;
+import main.model.repository.*;
 import main.service.util.TimestampUtil;
 import org.springframework.stereotype.Service;
 
@@ -27,12 +24,14 @@ public class PostService {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final PostCommentService postCommentService;
+    private final PostVoteService postVoteService;
 
-    public PostService(PostRepository postRepository, PostCommentRepository postCommentRepository, TagRepository tagRepository, UserRepository userRepository, PostCommentService postCommentService) {
+    public PostService(PostRepository postRepository, PostCommentRepository postCommentRepository, TagRepository tagRepository, UserRepository userRepository, PostCommentService postCommentService, PostVoteRepository postVoteRepository, PostVoteService postVoteService) {
         this.postRepository = postRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.postCommentService = postCommentService;
+        this.postVoteService = postVoteService;
     }
 
     public PostsResponse getActualPosts(PostRequest postRequest, PostRequestKey key) {
@@ -149,8 +148,8 @@ public class PostService {
         postByIdResponse.setUser(user);
         postByIdResponse.setTitle(post.getTitle());
         postByIdResponse.setText(post.getText());
-        postByIdResponse.setLikeCount(0); // todo
-        postByIdResponse.setDislikeCount(0); //todo
+        postByIdResponse.setLikeCount(postVoteService.getPostVoteCount(post.getId(), (short) 1));
+        postByIdResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
         postByIdResponse.setViewCount(post.getViewCount());
         List<PostCommentResponse> commentsToPost = postCommentService.getComments(post.getId());
         postByIdResponse.setComments(commentsToPost);
@@ -317,8 +316,8 @@ public class PostService {
         postResponse.setUser(user);
         postResponse.setTitle(post.getTitle());
         postResponse.setAnnounce(announce(post.getText()));
-        postResponse.setLikeCount(0); // todo
-        postResponse.setDislikeCount(0); //todo
+        postResponse.setLikeCount(postVoteService.getPostVoteCount(post.getId(), (short) 1));
+        postResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
         postResponse.setCommentCount(postCommentService.getCommentsCount(post.getId()));
         postResponse.setViewCount(post.getViewCount());
         posts.add(postResponse);
@@ -341,7 +340,7 @@ public class PostService {
                 posts.sort(Comparator.comparing(PostResponse::getTimestamp));
                 break;
             case BEST:
-                posts.sort(Comparator.comparing(PostResponse::getLikeCount));
+                posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getLikeCount)));
                 break;
             case POPULAR:
                 posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getCommentCount)));
