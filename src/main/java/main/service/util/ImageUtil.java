@@ -1,9 +1,5 @@
 package main.service.util;
 
-import main.controller.advice.error.ProfileMyError;
-import main.controller.advice.exception.ImageUploadException;
-import main.controller.advice.exception.ProfileMyException;
-import org.springframework.util.MimeType;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -14,7 +10,7 @@ import java.io.IOException;
 
 public class ImageUtil {
 
-    public final static String DEFAULT_PATH = "src\\main\\resources\\static\\";
+    public final static String DEFAULT_PATH = "\\src\\main\\resources\\static\\";
 
     public static void save(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
         if (!file.getContentType().equals("image/jpeg"))
@@ -30,7 +26,7 @@ public class ImageUtil {
         Graphics2D image = photoOutput.createGraphics();
         image.drawImage(photoInput, 0, 0, width, height, null);
         image.dispose();
-        File path = new File(DEFAULT_PATH + uploadDir);
+        File path = new File(uploadDir);
         if (!path.exists()) path.mkdirs();
         ImageIO.write(photoOutput, formatName, new File(path, fileName + '.' + formatName));
     }

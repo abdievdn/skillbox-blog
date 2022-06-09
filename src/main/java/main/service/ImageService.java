@@ -21,16 +21,16 @@ public class ImageService {
             if (image.getBytes().length > IMAGE_LIMIT_WEIGHT) {
                 throw new ImageUploadException(ImageUploadError.IMAGE);
             }
-            String uploadDir = "\\upload";
+            String uploadDir = "/upload/";
             String randomDirs = UUID.randomUUID().toString();
-            uploadDir += "\\" +
-                    randomDirs.substring(0, 2) + "\\" +
-                    randomDirs.substring(2, 4) + "\\" +
-                    randomDirs.substring(4, 6) + "\\";
+            uploadDir +=
+                    randomDirs.substring(0, 2) + "/" +
+                    randomDirs.substring(2, 4) + "/" +
+                    randomDirs.substring(4, 6) + "/";
             String fileName = TimestampUtil.encode(LocalDateTime.now()) + randomDirs.substring(6, 12);
             String fileFormat = ImageUtil.getFormatName(image);
             ImageUtil.save(uploadDir, fileName, fileFormat, image, 0, 0);
-            return uploadDir.replace('\\', '/') + fileName + '.' + fileFormat;
+            return uploadDir + fileName + '.' + fileFormat;
         } else {
             return null;
         }

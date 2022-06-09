@@ -1,6 +1,6 @@
 package main.service;
 
-import main.api.request.ProfileMyRequest;
+import main.api.request.*;
 import main.controller.advice.error.ProfileMyError;
 import main.controller.advice.exception.ProfileMyException;
 import main.controller.advice.error.RegisterError;
@@ -10,14 +10,9 @@ import main.model.CaptchaCode;
 import main.model.User;
 import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
-import main.api.request.LoginRequest;
-import main.api.request.RegisterRequest;
 import main.service.util.ImageUtil;
-import main.service.util.TimestampUtil;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,11 +20,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -38,10 +35,13 @@ public class UserService {
     private final CaptchaCodeRepository captchaRepository;
     private final AuthenticationManager authenticationManager;
 
-    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager) {
+    private final MailSender mailSender;
+
+    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager, MailSender mailSender) {
         this.userRepository = userRepository;
         this.captchaRepository = captchaRepository;
         this.authenticationManager = authenticationManager;
+        this.mailSender = mailSender;
     }
 
     private final static String REGEX_NAME = "[\\w\\s\\S]+";
@@ -152,16 +152,43 @@ public class UserService {
                 throw new ProfileMyException(ProfileMyError.PHOTO);
             }
 
-//            String rootPath = ApplicationContext.CLASSPATH_URL_PREFIX;
-//            System.out.println(rootPath);
-            String path = "\\avatars\\";
+            String path = "/avatars/";
             String fileName = String.valueOf(user.getId());
             String formatName = ImageUtil.getFormatName(photo);
             ImageUtil.save(path, fileName, formatName, photo, 90, 90);
-            user.setPhoto(path.replace('\\', '/') + fileName + '.' + formatName);
+            user.setPhoto(path + fileName + '.' + formatName);
         }
         userRepository.save(user);
         return profileMyResponse;
+    }
+
+    public PasswordRestoreResponse passwordRestore(PasswordRestoreRequest passwordRestoreRequest) {
+        String email = passwordRestoreRequest.getEmail();
+        System.out.println(email);
+        PasswordRestoreResponse passwordRestoreResponse = new PasswordRestoreResponse();
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()) {
+            passwordRestoreResponse.setResult(false);
+            return passwordRestoreResponse;
+        }
+        String code = String.valueOf(UUID.randomUUID()).replace("-", "");
+        user.get().setCode(code);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String restoreUrl = baseUrl + "/login/change-password/" + code;
+//        send mail
+        SimpleMailMessage simpleMail = new SimpleMailMessage();
+        simpleMail.setFrom("abdiev.dn@yandex.ru");
+        simpleMail.setTo(email);
+        simpleMail.setSubject("Восстановление пароля");
+        simpleMail.setText(restoreUrl);
+        mailSender.send(simpleMail);
+        passwordRestoreResponse.setResult(true);
+        userRepository.save(user.get());
+        return passwordRestoreResponse;
+    }
+
+    public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) {
+        return null;
     }
 
     private void createLoginResponse(LoginResponse loginResponse, String email) {

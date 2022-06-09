@@ -1,24 +1,23 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.api.request.LoginRequest;
-import main.api.request.PasswordRestoreRequest;
-import main.api.request.ProfileMyRequest;
+import main.api.request.*;
 import main.api.response.*;
+import main.controller.advice.error.ProfileMyError;
 import main.controller.advice.exception.ProfileMyException;
 import main.controller.advice.exception.RegisterException;
-import main.api.request.RegisterRequest;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
+import org.apache.tomcat.util.http.fileupload.impl.SizeLimitExceededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.Principal;
 
@@ -69,7 +68,7 @@ public class ApiAuthController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/auth/logout")
-    public ResponseEntity<LogoutResponse> logout(Principal principal) {
+    public ResponseEntity<LogoutResponse> logout() {
         LogoutResponse logoutResponse = userService.userLogout();
         if (logoutResponse == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -89,8 +88,15 @@ public class ApiAuthController {
     @PostMapping(path = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProfileMyResponse> profileMyPhoto(MultipartFile photo,
                                                             ProfileMyRequest profileMyRequest,
-                                                            Principal principal) throws ProfileMyException, IOException {
-        ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, photo, principal);
+                                                            Principal principal)
+            throws ProfileMyException, IOException {
+        ProfileMyResponse profileMyResponse;
+        try {
+            profileMyResponse = userService.userProfileChange(profileMyRequest, photo, principal);
+        }
+        catch (SizeLimitExceededException e) {
+            throw new ProfileMyException(ProfileMyError.PHOTO);
+        }
         return checkProfileMy(profileMyResponse);
     }
 
@@ -102,14 +108,18 @@ public class ApiAuthController {
     }
 
     @PostMapping("/auth/restore")
-    public ResponseEntity<?> passwordRestore(PasswordRestoreRequest passwordRestoreRequest) {
-        userService.passwordRestore(passwordRestoreRequest);
-
-        return null;
+    public ResponseEntity<?> passwordRestore(@RequestBody PasswordRestoreRequest passwordRestoreRequest) {
+        PasswordRestoreResponse passwordRestoreResponse = userService.passwordRestore(passwordRestoreRequest);
+        if (passwordRestoreResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(passwordRestoreResponse);
     }
 
-    @PostMapping("/auth/password")
-    public ResponseEntity<?> passwordChange() {
-        return null;
+    @PostMapping("/auth/password/")
+    public ResponseEntity<PasswordChangeResponse> passwordChange(@RequestBody PasswordChangeRequest passwordChangeRequest) {
+        PasswordChangeResponse passwordChangeResponse = userService.passwordChange(passwordChangeRequest);
+
+        return ResponseEntity.ok(passwordChangeResponse);
     }
 }
