@@ -1,13 +1,11 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.api.request.PostModerationRequest;
-import main.api.request.PostAddEditRequest;
-import main.api.request.PostRequest;
-import main.api.response.*;
+import main.api.request.post.*;
+import main.api.response.post.*;
 import main.controller.advice.exception.PostAddEditException;
 import main.service.PostService;
-import main.api.request.PostRequestKey;
+import main.service.PostVoteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,36 +16,37 @@ import java.security.Principal;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/post")
 public class ApiPostController {
 
     private final PostService postService;
+    private final PostVoteService postVoteService;
 
-    @GetMapping("/post")
+    @GetMapping
     public ResponseEntity<PostsResponse> post(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getActualPosts(postRequest, PostRequestKey.ALL);
         return checkPostResponseEntity(postsResponse);
     }
 
-    @GetMapping("/post/search")
+    @GetMapping("/search")
     public ResponseEntity<PostsResponse> postSearch(PostRequest postRequest) {
         PostsResponse postsResponse = postService.searchPosts(postRequest, PostRequestKey.SEARCH);
         return checkPostResponseEntity(postsResponse);
     }
 
-    @GetMapping("/post/byDate")
+    @GetMapping("/byDate")
     public ResponseEntity<PostsResponse> postByDate(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getPostsByDate(postRequest, PostRequestKey.DATE);
         return checkPostResponseEntity(postsResponse);
     }
 
-    @GetMapping("/post/byTag")
+    @GetMapping("/byTag")
     public ResponseEntity<PostsResponse> postByTag(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getPostsByTag(postRequest, PostRequestKey.TAG);
         return checkPostResponseEntity(postsResponse);
     }
 
-    @GetMapping("/post/{ID}")
+    @GetMapping("/{ID}")
     public ResponseEntity<PostByIdResponse> postById(@PathVariable int ID) {
         PostByIdResponse postByIdResponse = postService.getPostById(ID);
         if (postByIdResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -55,14 +54,14 @@ public class ApiPostController {
     }
 
     @PreAuthorize("hasAuthority('user:write')")
-    @GetMapping("/post/my")
+    @GetMapping("/my")
     public ResponseEntity<PostsResponse> postMy(PostRequest postRequest, Principal principal) {
         PostsResponse postsResponse = postService.getPostsMy(postRequest, principal);
         return checkPostResponseEntity(postsResponse);
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
-    @GetMapping("/post/moderation")
+    @GetMapping("/moderation")
     public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
         PostsResponse postsResponse = postService.getPostsModeration(postRequest, principal);
         return checkPostResponseEntity(postsResponse);
@@ -73,15 +72,10 @@ public class ApiPostController {
         return ResponseEntity.ok(postsResponse);
     }
 
-    @GetMapping("/calendar")
-    public ResponseEntity<CalendarResponse> calendar() {
-        CalendarResponse calendarResponse = postService.getYears();
-        if (calendarResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        return ResponseEntity.ok(calendarResponse);
-    }
+
 
     @PreAuthorize("hasAuthority('user:write')")
-    @PostMapping(value = "/post", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostAddEditResponse> postAdd(@RequestBody PostAddEditRequest postAddRequest,
                                                        Principal principal) throws PostAddEditException {
         PostAddEditResponse postAddResponse = postService.addPost(postAddRequest, principal);
@@ -90,7 +84,7 @@ public class ApiPostController {
     }
 
     @PreAuthorize("hasAuthority('user:write')")
-    @PutMapping(value = "/post/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostAddEditResponse> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
                                                         @PathVariable int ID) throws PostAddEditException {
         PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID);
@@ -98,13 +92,26 @@ public class ApiPostController {
         return ResponseEntity.ok(postAddResponse);
     }
 
-    @PreAuthorize("hasAuthority('user:moderate')")
-    @PostMapping(value = "/moderation")
-    public ResponseEntity<PostModerationResponse> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
-        PostModerationResponse postModerationResponse = postService.postModerate(postModerationRequest, principal);
-        if (postModerationResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        return ResponseEntity.ok(postModerationResponse);
+
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/like")
+    public ResponseEntity<PostVoteResponse> like(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) 1, principal);
+        if (postVoteResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(postVoteResponse);
     }
 
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/dislike")
+    public ResponseEntity<PostVoteResponse> dislike(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) -1, principal);
+        if (postVoteResponse == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(postVoteResponse);
+    }
 
 }

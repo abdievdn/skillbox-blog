@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.ProfileMyErrorResponse;
-import main.api.response.ProfileMyResponse;
+import main.api.response.auth.ProfileMyErrorResponse;
+import main.api.response.auth.ProfileMyResponse;
 import main.controller.advice.exception.ProfileMyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

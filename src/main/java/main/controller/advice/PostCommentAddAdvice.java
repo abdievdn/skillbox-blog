@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.PostCommentAddErrorResponse;
-import main.api.response.PostCommentAddResponse;
+import main.api.response.post.PostCommentAddErrorResponse;
+import main.api.response.post.PostCommentAddResponse;
 import main.controller.advice.exception.PostCommentAddException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

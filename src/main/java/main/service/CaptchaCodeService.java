@@ -4,7 +4,7 @@ import com.github.cage.Cage;
 import com.github.cage.GCage;
 import main.model.CaptchaCode;
 import main.model.repository.CaptchaCodeRepository;
-import main.api.response.CaptchaCodeResponse;
+import main.api.response.auth.CaptchaCodeResponse;
 import org.springframework.stereotype.Service;
 
 import java.io.*;

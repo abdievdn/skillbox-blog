@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.ImageErrorResponse;
-import main.api.response.ImageResponse;
+import main.api.response.general.ImageErrorResponse;
+import main.api.response.general.ImageResponse;
 import main.controller.advice.exception.ImageUploadException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

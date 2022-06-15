@@ -1,7 +1,7 @@
 package main.service;
 
-import main.api.request.SettingsRequest;
-import main.api.response.SettingsResponse;
+import main.api.request.general.SettingsRequest;
+import main.api.response.general.ImageErrorResponse;
 import main.model.GlobalSettings;
 import main.model.repository.SettingsRepository;
 import org.springframework.stereotype.Service;
@@ -34,8 +34,8 @@ public class SettingsService {
         settingsRepository.save(globalSettings);
     }
 
-    public SettingsResponse getGlobalSettings() {
-        SettingsResponse settingsResponse = new SettingsResponse();
+    public ImageErrorResponse.SettingsResponse getGlobalSettings() {
+        ImageErrorResponse.SettingsResponse settingsResponse = new ImageErrorResponse.SettingsResponse();
         Iterable<GlobalSettings> globalSettings = settingsRepository.findAll();
         for (GlobalSettings settings : globalSettings) {
             switch (SettingsCode.valueOf(settings.getCode())) {

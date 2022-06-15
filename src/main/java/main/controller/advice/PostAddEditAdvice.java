@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.PostAddEditErrorResponse;
-import main.api.response.PostAddEditResponse;
+import main.api.response.post.PostAddEditErrorResponse;
+import main.api.response.post.PostAddEditResponse;
 import main.controller.advice.exception.PostAddEditException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

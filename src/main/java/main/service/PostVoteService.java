@@ -1,7 +1,7 @@
 package main.service;
 
-import main.api.request.PostVoteRequest;
-import main.api.response.PostVoteResponse;
+import main.api.request.post.PostVoteRequest;
+import main.api.response.post.PostVoteResponse;
 import main.model.Post;
 import main.model.PostVote;
 import main.model.User;

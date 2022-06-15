@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.RegisterErrorResponse;
-import main.api.response.RegisterResponse;
+import main.api.response.auth.RegisterErrorResponse;
+import main.api.response.auth.RegisterResponse;
 import main.controller.advice.exception.RegisterException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

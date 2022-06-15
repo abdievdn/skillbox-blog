@@ -1,7 +1,9 @@
 package main.service;
 
-import main.api.request.*;
-import main.api.response.*;
+import main.api.request.post.*;
+import main.api.response.auth.UserResponse;
+import main.api.response.general.CalendarResponse;
+import main.api.response.post.*;
 import main.controller.advice.error.PostAddEditError;
 import main.controller.advice.exception.PostAddEditException;
 import main.model.*;
@@ -161,27 +163,6 @@ public class PostService {
         return postByIdResponse;
     }
 
-    public CalendarResponse getYears() {
-        CalendarResponse calendarResponse = new CalendarResponse();
-        TreeSet<Integer> calendarYears = new TreeSet<>();
-        Map<String, Integer> calendarPosts = new TreeMap<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (isNotActual(post)) continue;
-            LocalDateTime postDate = post.getTime();
-            calendarYears.add(postDate.getYear());
-            String postDateFormat = postDate.toLocalDate().toString();
-            if (calendarPosts.containsKey(postDateFormat)) {
-                calendarPosts.put(postDateFormat, calendarPosts.get(postDateFormat) + 1);
-            } else {
-                calendarPosts.put(postDateFormat, 1);
-            }
-        }
-        calendarResponse.setYears(calendarYears);
-        calendarResponse.setPosts(calendarPosts);
-        return calendarResponse;
-    }
-
     public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID) throws PostAddEditException {
         Post post = postRepository.findById(ID).orElseThrow();
         String author = post.getUser().getEmail();
@@ -211,16 +192,16 @@ public class PostService {
         if (user.getIsModerator() == 0 || post.getModerationStatus() == null) {
             post.setModerationStatus(ModerationStatus.NEW);
         }
-//        compare timestamp
+// ->        compare timestamp
         LocalDateTime addedTime = LocalDateTime.now();
         long nowTimestamp = TimestampUtil.encode(addedTime);
         long postTimestamp = postAddEditRequest.getTimestamp();
         if (postTimestamp > nowTimestamp) {
             addedTime = TimestampUtil.decode(postTimestamp);
         }
-//
+// <-
         post.setTime(addedTime);
-//        add tags, checks new or existing tag
+// ->        add tags, checks new or existing tag
         if (postAddEditRequest.getTags().length != 0) {
             Set<Tag> tags = new HashSet<>();
             String[] requestTags = postAddEditRequest.getTags();
@@ -237,7 +218,7 @@ public class PostService {
             }
             post.setTags(tags);
         } else post.setTags(new HashSet<>());
-//
+// <-
         postAddEditResponse.setResult(true);
         postRepository.save(post);
         return postAddEditResponse;

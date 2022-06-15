@@ -1,11 +1,11 @@
 package main.service;
 
-import main.api.request.*;
+import main.api.request.auth.*;
+import main.api.response.auth.*;
 import main.controller.advice.error.ProfileMyError;
 import main.controller.advice.exception.ProfileMyException;
 import main.controller.advice.error.RegisterError;
 import main.controller.advice.exception.RegisterException;
-import main.api.response.*;
 import main.model.CaptchaCode;
 import main.model.User;
 import main.model.repository.CaptchaCodeRepository;
@@ -155,7 +155,7 @@ public class UserService {
             String path = "/avatars/";
             String fileName = String.valueOf(user.getId());
             String formatName = ImageUtil.getFormatName(photo);
-            ImageUtil.save(path, fileName, formatName, photo, 90, 90);
+            ImageUtil.saveImage(path, fileName, formatName, photo, 90, 90);
             user.setPhoto(path + fileName + '.' + formatName);
         }
         userRepository.save(user);
@@ -177,7 +177,7 @@ public class UserService {
         String restoreUrl = baseUrl + "/login/change-password/" + code;
 //        send mail
         SimpleMailMessage simpleMail = new SimpleMailMessage();
-        simpleMail.setFrom("abdiev.dn@yandex.ru");
+        simpleMail.setFrom("adzmit@yandex.ru");
         simpleMail.setTo(email);
         simpleMail.setSubject("Восстановление пароля");
         simpleMail.setText(restoreUrl);
@@ -188,7 +188,12 @@ public class UserService {
     }
 
     public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) {
-        return null;
+        PasswordChangeResponse passwordChangeResponse = new PasswordChangeResponse();
+        String code = passwordChangeRequest.getCode();
+        User user = userRepository.findByCode(code).orElseThrow();
+
+        passwordChangeResponse.setResult(true);
+        return passwordChangeResponse;
     }
 
     private void createLoginResponse(LoginResponse loginResponse, String email) {

@@ -1,12 +1,10 @@
 package main.service;
 
-import main.model.ModerationStatus;
+import main.api.response.general.InitResponse;
 import main.model.Post;
 import main.model.Tag;
 import main.model.repository.PostRepository;
 import main.model.repository.TagRepository;
-import main.api.response.TagResponse;
-import main.api.response.TagsResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,8 +23,8 @@ public class TagService {
         this.postRepository = postRepository;
     }
 
-    public TagsResponse getTags() {
-        TagsResponse tagsResponse = new TagsResponse();
+    public InitResponse.TagsResponse getTags() {
+        InitResponse.TagsResponse tagsResponse = new InitResponse.TagsResponse();
 
         // collect tags (name, weight) to map and calculate ratio
         double ratio;
@@ -54,9 +52,9 @@ public class TagService {
             return tagsResponse;
         }
         ratio = 1 / popularTagRawWeight;
-        Set<TagResponse> tags = new CopyOnWriteArraySet<>();
+        Set<InitResponse.TagResponse> tags = new CopyOnWriteArraySet<>();
         for (Map.Entry<String, Double> entry : tagsWeight.entrySet()) {
-            TagResponse tagResponse = new TagResponse();
+            InitResponse.TagResponse tagResponse = new InitResponse.TagResponse();
             tagResponse.setName(entry.getKey());
             tagResponse.setWeight(entry.getValue() * ratio);
             tags.add(tagResponse);

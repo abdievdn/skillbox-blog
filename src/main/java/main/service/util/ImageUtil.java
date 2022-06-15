@@ -1,5 +1,8 @@
 package main.service.util;
 
+import main.Blog;
+import main.controller.DefaultController;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -10,9 +13,7 @@ import java.io.IOException;
 
 public class ImageUtil {
 
-    public final static String DEFAULT_PATH = "\\src\\main\\resources\\static\\";
-
-    public static void save(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
+    public static void saveImage(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
         if (!file.getContentType().equals("image/jpeg"))
             if (!file.getContentType().equals("image/png")) {
                 throw new IOException();
@@ -26,7 +27,8 @@ public class ImageUtil {
         Graphics2D image = photoOutput.createGraphics();
         image.drawImage(photoInput, 0, 0, width, height, null);
         image.dispose();
-        File path = new File(uploadDir);
+        File path = new File(DefaultController.getDefaultPath() + uploadDir);
+        System.out.println(path);
         if (!path.exists()) path.mkdirs();
         ImageIO.write(photoOutput, formatName, new File(path, fileName + '.' + formatName));
     }

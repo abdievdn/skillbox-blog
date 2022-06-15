@@ -1,6 +1,6 @@
 package main.service;
 
-import main.api.response.StatisticsResponse;
+import main.api.response.general.ImageErrorResponse;
 import main.model.GlobalSettings;
 import main.model.Post;
 import main.model.User;
@@ -27,9 +27,9 @@ public class StatisticsService {
         this.postVoteService = postVoteService;
     }
 
-    public StatisticsResponse getStatisticsMy(Principal principal) {
+    public ImageErrorResponse.StatisticsResponse getStatisticsMy(Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        StatisticsResponse statisticsResponse = new StatisticsResponse();
+        ImageErrorResponse.StatisticsResponse statisticsResponse = new ImageErrorResponse.StatisticsResponse();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
             if (post.getUser().getId() != user.getId()) continue;
@@ -38,11 +38,11 @@ public class StatisticsService {
         return statisticsResponse;
     }
 
-    public StatisticsResponse getStatisticsAll(Principal principal) {
+    public ImageErrorResponse.StatisticsResponse getStatisticsAll(Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
         GlobalSettings settings = settingsRepository.findByCode(SettingsCode.STATISTICS_IS_PUBLIC.name()).orElseThrow();
         if (settings.getValue().equals("NO") && user.getIsModerator() != 1) return null;
-        StatisticsResponse statisticsResponse = new StatisticsResponse();
+        ImageErrorResponse.StatisticsResponse statisticsResponse = new ImageErrorResponse.StatisticsResponse();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
             statisticsExtraction(statisticsResponse, post);
@@ -50,7 +50,7 @@ public class StatisticsService {
         return statisticsResponse;
     }
 
-    private void statisticsExtraction(StatisticsResponse statisticsResponse, Post post) {
+    private void statisticsExtraction(ImageErrorResponse.StatisticsResponse statisticsResponse, Post post) {
         statisticsResponse.setPostsCount(statisticsResponse.getPostsCount() + 1);
         statisticsResponse.setLikesCount(postVoteService.getPostVoteCount(post.getId(), (short) 1) + statisticsResponse.getLikesCount());
         statisticsResponse.setDislikesCount(postVoteService.getPostVoteCount(post.getId(), (short) -1) + statisticsResponse.getDislikesCount());
