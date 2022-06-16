@@ -1,8 +1,6 @@
-package main.service.util;
+package main.service.utils;
 
-import main.Blog;
 import main.controller.DefaultController;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;

@@ -2,8 +2,8 @@ package main.service;
 
 import main.controller.advice.error.ImageUploadError;
 import main.controller.advice.exception.ImageUploadException;
-import main.service.util.ImageUtil;
-import main.service.util.TimestampUtil;
+import main.service.utils.ImageUtil;
+import main.service.utils.TimestampUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 

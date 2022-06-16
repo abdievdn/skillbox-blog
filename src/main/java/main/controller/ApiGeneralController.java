@@ -1,18 +1,14 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.Blog;
 import main.api.request.auth.ProfileMyRequest;
 import main.api.request.post.PostCommentAddRequest;
 import main.api.request.post.PostModerationRequest;
 import main.api.request.general.SettingsRequest;
 import main.api.response.BlogResponse;
-import main.api.response.auth.ProfileMyResponse;
-import main.api.response.general.CalendarResponse;
-import main.api.response.general.ImageErrorResponse;
-import main.api.response.general.InitResponse;
-import main.api.response.post.PostCommentAddResponse;
-import main.api.response.post.PostModerationResponse;
+import main.api.response.general.*;
+import main.api.response.general.PostCommentAddResponse;
+import main.api.response.general.PostModerationResponse;
 import main.controller.advice.error.ProfileMyError;
 import main.controller.advice.exception.ImageUploadException;
 import main.controller.advice.exception.PostCommentAddException;
@@ -24,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -50,12 +47,9 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/settings")
-    public ResponseEntity<ImageErrorResponse.SettingsResponse> settings() {
-        ImageErrorResponse.SettingsResponse settingsResponse = settingsService.getGlobalSettings();
-        if (settingsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(settingsResponse);
+    public ResponseEntity<BlogResponse> settings() {
+        SettingsResponse settingsResponse = settingsService.getGlobalSettings();
+        return DefaultController.checkResponse(settingsResponse);
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
@@ -67,36 +61,28 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/statistics/my")
-    public ResponseEntity<ImageErrorResponse.StatisticsResponse> statisticsMy(Principal principal) {
-        ImageErrorResponse.StatisticsResponse statisticsResponse = statisticsService.getStatisticsMy(principal);
-        if (statisticsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(statisticsResponse);
+    public ResponseEntity<BlogResponse> statisticsMy(Principal principal) {
+        StatisticsResponse statisticsResponse = statisticsService.getStatisticsMy(principal);
+        return DefaultController.checkResponse(statisticsResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/statistics/all")
-    public ResponseEntity<ImageErrorResponse.StatisticsResponse> statisticsAll(Principal principal) {
-        ImageErrorResponse.StatisticsResponse statisticsResponse = statisticsService.getStatisticsAll(principal);
-        if (statisticsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-        return ResponseEntity.ok(statisticsResponse);
+    public ResponseEntity<BlogResponse> statisticsAll(Principal principal) {
+        StatisticsResponse statisticsResponse = statisticsService.getStatisticsAll(principal);
+        return DefaultController.checkResponse(statisticsResponse);
     }
 
     @GetMapping("/tag")
-    public ResponseEntity<InitResponse.TagsResponse> tag() {
-        InitResponse.TagsResponse tagsResponse = tagService.getTags();
-        if (tagsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(tagsResponse);
+    public ResponseEntity<BlogResponse> tag() {
+        TagsResponse tagsResponse = tagService.getTags();
+        return DefaultController.checkResponse(tagsResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping("/image")
-    public ResponseEntity<String> image(MultipartFile image) throws ImageUploadException, IOException {
+    public ResponseEntity<String> image(MultipartFile image)
+            throws ImageUploadException, IOException, MaxUploadSizeExceededException {
         if (image == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
@@ -105,43 +91,39 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping("/comment")
-    public ResponseEntity<PostCommentAddResponse> comment(@RequestBody PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
+    public ResponseEntity<BlogResponse> comment(@RequestBody PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
         PostCommentAddResponse postCommentAddResponse = postCommentService.addComment(postCommentAddRequest, principal);
-        if (postCommentAddResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(postCommentAddResponse);
+        return DefaultController.checkResponse(postCommentAddResponse);
     }
 
     @GetMapping("/calendar")
     public ResponseEntity<BlogResponse> calendar() {
         CalendarResponse calendarResponse = calendarService.getYears();
-        return Blog.checkResponse(calendarResponse);
+        return DefaultController.checkResponse(calendarResponse);
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
     @PostMapping(value = "/moderation")
-    public ResponseEntity<PostModerationResponse> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
+    public ResponseEntity<BlogResponse> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
         PostModerationResponse postModerationResponse = postService.postModerate(postModerationRequest, principal);
-        if (postModerationResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        return ResponseEntity.ok(postModerationResponse);
+        return DefaultController.checkResponse(postModerationResponse);
     }
 
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping(path = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ProfileMyResponse> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
+    public ResponseEntity<BlogResponse> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
                                                        Principal principal) throws ProfileMyException, IOException {
         ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, null, principal);
-        return checkProfileMy(profileMyResponse);
+        return DefaultController.checkResponse(profileMyResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping(path = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProfileMyResponse> profileMyPhoto(MultipartFile photo,
+    public ResponseEntity<BlogResponse> profileMyPhoto(MultipartFile photo,
                                                             ProfileMyRequest profileMyRequest,
                                                             Principal principal)
-            throws ProfileMyException, IOException {
+            throws ProfileMyException, IOException, MaxUploadSizeExceededException {
         ProfileMyResponse profileMyResponse;
         try {
             profileMyResponse = userService.userProfileChange(profileMyRequest, photo, principal);
@@ -149,13 +131,6 @@ public class ApiGeneralController {
         catch (SizeLimitExceededException e) {
             throw new ProfileMyException(ProfileMyError.PHOTO);
         }
-        return checkProfileMy(profileMyResponse);
-    }
-
-    private ResponseEntity<ProfileMyResponse> checkProfileMy(ProfileMyResponse profileMyResponse) {
-        if (profileMyResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(profileMyResponse);
+        return DefaultController.checkResponse(profileMyResponse);
     }
 }

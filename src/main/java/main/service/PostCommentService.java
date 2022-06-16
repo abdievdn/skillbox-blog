@@ -1,7 +1,7 @@
 package main.service;
 
 import main.api.request.post.PostCommentAddRequest;
-import main.api.response.post.PostCommentAddResponse;
+import main.api.response.general.PostCommentAddResponse;
 import main.api.response.post.PostCommentResponse;
 import main.api.response.auth.UserResponse;
 import main.controller.advice.error.PostCommentAddError;
@@ -12,7 +12,7 @@ import main.model.User;
 import main.model.repository.PostCommentRepository;
 import main.model.repository.PostRepository;
 import main.model.repository.UserRepository;
-import main.service.util.TimestampUtil;
+import main.service.utils.TimestampUtil;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;

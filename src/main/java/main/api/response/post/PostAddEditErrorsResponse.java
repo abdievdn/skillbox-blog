@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PostAddEditErrorResponse {
-
+public class PostAddEditErrorsResponse {
     private String title;
     private String text;
 }

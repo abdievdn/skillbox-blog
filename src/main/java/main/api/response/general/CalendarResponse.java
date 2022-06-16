@@ -8,7 +8,6 @@ import java.util.TreeSet;
 
 @Data
 public class CalendarResponse implements BlogResponse {
-
     private TreeSet<Integer> years;
     private Map<String, Integer> posts;
 }

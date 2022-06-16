@@ -1,7 +1,8 @@
 package main.controller.advice.error;
 
 public enum ImageUploadError {
-    IMAGE("Размер файла превышает допустимый размер");
+    IMAGE("Размер файла превышает допустимый размер"),
+    PHOTO("Фото слишком большое, нужно не более 5 Мб");
 
     private final String error;
 

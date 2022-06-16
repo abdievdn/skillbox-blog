@@ -2,7 +2,10 @@ package main.service;
 
 import main.api.request.auth.*;
 import main.api.response.auth.*;
+import main.api.response.general.ProfileMyResponse;
+import main.controller.advice.error.PasswordChangeError;
 import main.controller.advice.error.ProfileMyError;
+import main.controller.advice.exception.PasswordChangeException;
 import main.controller.advice.exception.ProfileMyException;
 import main.controller.advice.error.RegisterError;
 import main.controller.advice.exception.RegisterException;
@@ -10,14 +13,14 @@ import main.model.CaptchaCode;
 import main.model.User;
 import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
-import main.service.util.ImageUtil;
+import main.service.utils.ImageUtil;
+import main.service.utils.PasswordUtil;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -70,8 +73,7 @@ public class UserService {
         }
         User user = new User();
         user.setEmail(registerRequest.getEmail());
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
-        user.setPassword(passwordEncoder.encode(userPassword));
+        user.setPassword(PasswordUtil.encodePassword(userPassword));
         user.setName(userName);
         user.setIsModerator((short) 0);
         user.setModerationCount(0);
@@ -139,8 +141,7 @@ public class UserService {
             user.setName(profileMyRequest.getName());
         }
         if (profileMyRequest.getPassword() != null) {
-            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
-            user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
+            user.setPassword(PasswordUtil.encodePassword(profileMyRequest.getPassword()));
         }
         if (profileMyRequest.getRemovePhoto() == 1) {
             user.setPhoto("");
@@ -151,7 +152,6 @@ public class UserService {
             if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
                 throw new ProfileMyException(ProfileMyError.PHOTO);
             }
-
             String path = "/avatars/";
             String fileName = String.valueOf(user.getId());
             String formatName = ImageUtil.getFormatName(photo);
@@ -175,23 +175,36 @@ public class UserService {
         user.get().setCode(code);
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         String restoreUrl = baseUrl + "/login/change-password/" + code;
-//        send mail
+// ->       send mail
         SimpleMailMessage simpleMail = new SimpleMailMessage();
         simpleMail.setFrom("adzmit@yandex.ru");
         simpleMail.setTo(email);
         simpleMail.setSubject("Восстановление пароля");
         simpleMail.setText(restoreUrl);
         mailSender.send(simpleMail);
+// <-
         passwordRestoreResponse.setResult(true);
         userRepository.save(user.get());
         return passwordRestoreResponse;
     }
 
-    public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) {
+    public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
         PasswordChangeResponse passwordChangeResponse = new PasswordChangeResponse();
         String code = passwordChangeRequest.getCode();
-        User user = userRepository.findByCode(code).orElseThrow();
-
+        Optional<CaptchaCode> captchaCode = captchaRepository.findByCode(passwordChangeRequest.getCaptcha());
+        if (captchaCode.isPresent()) {
+            if (!captchaCode.get().getSecretCode().equals(passwordChangeRequest.getCaptchaSecret())) {
+                return null;
+            }
+        } else {
+            throw new PasswordChangeException(PasswordChangeError.CAPTCHA);
+        }
+        if (passwordChangeRequest.getPassword().length() < 6) throw new PasswordChangeException(PasswordChangeError.PASSWORD);
+        Optional<User> user = userRepository.findByCode(code);
+        if (user.isEmpty()) throw new PasswordChangeException(PasswordChangeError.CODE);
+        user.get().setPassword(PasswordUtil.encodePassword(passwordChangeRequest.getPassword()));
+        user.get().setCode(null);
+        userRepository.save(user.get());
         passwordChangeResponse.setResult(true);
         return passwordChangeResponse;
     }

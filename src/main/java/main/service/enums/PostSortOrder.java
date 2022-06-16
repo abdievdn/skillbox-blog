@@ -1,4 +1,4 @@
-package main.service;
+package main.service.enums;
 
 public enum PostSortOrder {
     RECENT,

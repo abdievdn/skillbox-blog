@@ -1,6 +1,6 @@
 package main.controller.advice;
 
-import main.api.response.post.PostAddEditErrorResponse;
+import main.api.response.post.PostAddEditErrorsResponse;
 import main.api.response.post.PostAddEditResponse;
 import main.controller.advice.exception.PostAddEditException;
 import org.springframework.http.ResponseEntity;
@@ -13,20 +13,20 @@ public class PostAddEditAdvice {
     @ExceptionHandler(PostAddEditException.class)
     public ResponseEntity<PostAddEditResponse> handleException(PostAddEditException e) {
         PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
-        PostAddEditErrorResponse postAddEditErrorResponse = new PostAddEditErrorResponse();
+        PostAddEditErrorsResponse postAddEditErrorsResponse = new PostAddEditErrorsResponse();
         switch (e.getPostAddEditError()) {
             case TEXT:
-                postAddEditErrorResponse.setText(e.getMessage());
+                postAddEditErrorsResponse.setText(e.getMessage());
                 break;
             case TITLE:
-                postAddEditErrorResponse.setTitle(e.getMessage());
+                postAddEditErrorsResponse.setTitle(e.getMessage());
                 break;
             default:
-                postAddEditErrorResponse = null;
+                postAddEditErrorsResponse = null;
                 break;
         }
         postAddEditResponse.setResult(false);
-        postAddEditResponse.setErrors(postAddEditErrorResponse);
+        postAddEditResponse.setErrors(postAddEditErrorsResponse);
         return ResponseEntity.ok(postAddEditResponse);
     }
 }

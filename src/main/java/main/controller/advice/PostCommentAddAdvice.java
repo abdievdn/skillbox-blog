@@ -1,7 +1,7 @@
 package main.controller.advice;
 
-import main.api.response.post.PostCommentAddErrorResponse;
-import main.api.response.post.PostCommentAddResponse;
+import main.api.response.general.PostCommentAddErrorsResponse;
+import main.api.response.general.PostCommentAddResponse;
 import main.controller.advice.exception.PostCommentAddException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,15 +14,15 @@ public class PostCommentAddAdvice {
     @ExceptionHandler(PostCommentAddException.class)
     public ResponseEntity<PostCommentAddResponse> handleException(PostCommentAddException e) {
         PostCommentAddResponse postCommentAddResponse = new PostCommentAddResponse();
-        PostCommentAddErrorResponse postCommentAddErrorResponse = new PostCommentAddErrorResponse();
+        PostCommentAddErrorsResponse postCommentAddErrorsResponse = new PostCommentAddErrorsResponse();
         switch(e.getPostCommentAddError()) {
             case TEXT:
-                postCommentAddErrorResponse.setText(e.getMessage());
+                postCommentAddErrorsResponse.setText(e.getMessage());
                 break;
             default: break;
         }
         postCommentAddResponse.setResult(false);
-        postCommentAddResponse.setErrors(postCommentAddErrorResponse);
+        postCommentAddResponse.setErrors(postCommentAddErrorsResponse);
         return new ResponseEntity<>(postCommentAddResponse, HttpStatus.BAD_REQUEST);
     }
 }

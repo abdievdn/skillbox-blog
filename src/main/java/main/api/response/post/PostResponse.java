@@ -5,7 +5,6 @@ import main.api.response.auth.UserResponse;
 
 @Data
 public class PostResponse {
-
     private int id;
     private long timestamp;
     private UserResponse user; // id, name

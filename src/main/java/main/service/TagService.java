@@ -1,6 +1,8 @@
 package main.service;
 
 import main.api.response.general.InitResponse;
+import main.api.response.general.TagResponse;
+import main.api.response.general.TagsResponse;
 import main.model.Post;
 import main.model.Tag;
 import main.model.repository.PostRepository;
@@ -23,8 +25,8 @@ public class TagService {
         this.postRepository = postRepository;
     }
 
-    public InitResponse.TagsResponse getTags() {
-        InitResponse.TagsResponse tagsResponse = new InitResponse.TagsResponse();
+    public TagsResponse getTags() {
+        TagsResponse tagsResponse = new TagsResponse();
 
         // collect tags (name, weight) to map and calculate ratio
         double ratio;
@@ -52,9 +54,9 @@ public class TagService {
             return tagsResponse;
         }
         ratio = 1 / popularTagRawWeight;
-        Set<InitResponse.TagResponse> tags = new CopyOnWriteArraySet<>();
+        Set<TagResponse> tags = new CopyOnWriteArraySet<>();
         for (Map.Entry<String, Double> entry : tagsWeight.entrySet()) {
-            InitResponse.TagResponse tagResponse = new InitResponse.TagResponse();
+            TagResponse tagResponse = new TagResponse();
             tagResponse.setName(entry.getKey());
             tagResponse.setWeight(entry.getValue() * ratio);
             tags.add(tagResponse);

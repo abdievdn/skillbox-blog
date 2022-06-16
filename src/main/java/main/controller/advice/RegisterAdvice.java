@@ -1,6 +1,6 @@
 package main.controller.advice;
 
-import main.api.response.auth.RegisterErrorResponse;
+import main.api.response.auth.RegisterErrorsResponse;
 import main.api.response.auth.RegisterResponse;
 import main.controller.advice.exception.RegisterException;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,7 @@ public class RegisterAdvice {
     @ExceptionHandler(RegisterException.class)
     public ResponseEntity<RegisterResponse> handleException(RegisterException e) {
         RegisterResponse registerResponse = new RegisterResponse();
-        RegisterErrorResponse registerErrorsResponse = new RegisterErrorResponse();
+        RegisterErrorsResponse registerErrorsResponse = new RegisterErrorsResponse();
         switch (e.getRegisterError()) {
             case EMAIL:
                 registerErrorsResponse.setEmail(e.getMessage());

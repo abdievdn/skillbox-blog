@@ -6,8 +6,8 @@ import main.api.response.BlogResponse;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LoginResponse implements BlogResponse {
-    private boolean result;
-    private UserResponse user;
-
+public class PasswordChangeErrorsResponse implements BlogResponse {
+    private String code;
+    private String password;
+    private String captcha;
 }

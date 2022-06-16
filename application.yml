@@ -12,13 +12,13 @@ spring:
     time: HH:mm:ss
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 100MB
+      max-file-size: 10MB
+      max-request-size: 10MB
   mail:
     host: smtp.yandex.ru
     port: 465
     username: adzmit
-    password: urwzxlaffnmxyinw
+    password: uhsdpwviyxeuhaug
     properties:
       mail:
         smtp:
