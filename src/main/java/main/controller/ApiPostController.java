@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
-@AllArgsConstructor
 @RestController
 @RequestMapping("/api/post")
+@AllArgsConstructor
 public class ApiPostController {
 
     private final PostService postService;
