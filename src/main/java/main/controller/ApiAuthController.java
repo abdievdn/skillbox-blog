@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
-@AllArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
+@AllArgsConstructor
 public class ApiAuthController {
 
     private final CaptchaCodeService captchaService;
