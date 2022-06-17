@@ -1,7 +1,9 @@
 package main.controller.advice.error;
 
+import main.Blog;
+
 public enum PostCommentAddError {
-    TEXT("Текст комментария не задан или слишком короткий");
+    TEXT(Blog.ERROR_MESSAGE_COMMENT_TEXT_LENGTH);
 
     private final String error;
 

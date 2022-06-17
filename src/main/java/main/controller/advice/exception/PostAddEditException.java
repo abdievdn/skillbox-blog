@@ -1,9 +1,11 @@
 package main.controller.advice.exception;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import main.controller.advice.error.PostAddEditError;
 
-@Data
+@AllArgsConstructor
+@Getter
 public class PostAddEditException extends Exception {
 
     private final PostAddEditError postAddEditError;

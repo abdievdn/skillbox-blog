@@ -1,10 +1,12 @@
 package main.controller.advice.error;
 
+import main.Blog;
+
 public enum RegisterError {
-    EMAIL("Этот e-mail уже зарегистрирован"),
-    NAME("Имя указано неверно"),
-    PASSWORD("Пароль короче 6-ти символов"),
-    CAPTCHA("Код с картинки введён неверно");
+    EMAIL(Blog.ERROR_MESSAGE_EMAIL_REGISTERED),
+    NAME(Blog.ERROR_MESSAGE_NAME_IS_INCORRECT),
+    PASSWORD(Blog.ERROR_MESSAGE_PASSWORD_LENGTH),
+    CAPTCHA(Blog.ERROR_MESSAGE_CAPTCHA_CODE);
 
     private final String error;
 

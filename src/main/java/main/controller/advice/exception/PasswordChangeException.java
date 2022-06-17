@@ -1,9 +1,11 @@
 package main.controller.advice.exception;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import main.controller.advice.error.PasswordChangeError;
 
-@Data
+@AllArgsConstructor
+@Getter
 public class PasswordChangeException extends Exception{
 
     private final PasswordChangeError passwordChangeError;

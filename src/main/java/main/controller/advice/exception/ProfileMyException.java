@@ -1,9 +1,11 @@
 package main.controller.advice.exception;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import main.controller.advice.error.ProfileMyError;
 
-@Data
+@AllArgsConstructor
+@Getter
 public class ProfileMyException extends Exception {
 
     private final ProfileMyError profileMyError;

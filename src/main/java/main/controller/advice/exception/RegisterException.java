@@ -1,9 +1,11 @@
 package main.controller.advice.exception;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import main.controller.advice.error.RegisterError;
 
-@Data
+@AllArgsConstructor
+@Getter
 public class RegisterException extends Exception {
 
     private final RegisterError registerError;

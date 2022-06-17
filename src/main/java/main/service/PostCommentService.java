@@ -1,6 +1,8 @@
 package main.service;
 
-import main.api.request.post.PostCommentAddRequest;
+import lombok.AllArgsConstructor;
+import main.Blog;
+import main.api.request.general.PostCommentAddRequest;
 import main.api.response.general.PostCommentAddResponse;
 import main.api.response.post.PostCommentResponse;
 import main.api.response.auth.UserResponse;
@@ -21,17 +23,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
+@AllArgsConstructor
 public class PostCommentService {
 
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
-
-    public PostCommentService(PostCommentRepository postCommentRepository, UserRepository userRepository, PostRepository postRepository) {
-        this.postCommentRepository = postCommentRepository;
-        this.userRepository = userRepository;
-        this.postRepository = postRepository;
-    }
 
     public List<PostCommentResponse> getComments(int postId) {
         List<PostCommentResponse> commentsToPost = new CopyOnWriteArrayList<>();
@@ -65,7 +62,7 @@ public class PostCommentService {
     public PostCommentAddResponse addComment(PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
         Post post = postRepository.findById(postCommentAddRequest.getPostId()).orElseThrow();
-        if (postCommentAddRequest.getText().length() < 2) throw new PostCommentAddException(PostCommentAddError.TEXT);
+        if (postCommentAddRequest.getText().length() < Blog.COMMENT_TEXT_LENGTH) throw new PostCommentAddException(PostCommentAddError.TEXT);
         PostComment postComment = new PostComment();
         if (postCommentAddRequest.getParentId() != null) {
             PostComment parentPost = postCommentRepository.findById(postCommentAddRequest.getParentId()).orElseThrow();

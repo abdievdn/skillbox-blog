@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.AllArgsConstructor;
 import main.api.response.general.CalendarResponse;
 import main.model.Post;
 import main.model.repository.PostRepository;
@@ -11,13 +12,10 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 @Service
+@AllArgsConstructor
 public class CalendarService {
 
     private final PostRepository postRepository;
-
-    public CalendarService(PostRepository postRepository) {
-        this.postRepository = postRepository;
-    }
 
     public CalendarResponse getYears() {
         CalendarResponse calendarResponse = new CalendarResponse();

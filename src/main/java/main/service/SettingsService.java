@@ -1,5 +1,6 @@
 package main.service;
 
+import main.Blog;
 import main.api.request.general.SettingsRequest;
 import main.api.response.general.SettingsResponse;
 import main.model.GlobalSettings;
@@ -14,17 +15,17 @@ public class SettingsService {
 
     public SettingsService(SettingsRepository settingsRepository) {
         this.settingsRepository = settingsRepository;
-        checkData();
+        createSettingsIfNoExist();
     }
 
-    private void checkData() {
+    private void createSettingsIfNoExist() {
         Iterable<GlobalSettings> globalSettings = settingsRepository.findAll();
         if (globalSettings.iterator().hasNext()) {
             return;
         }
-        insertSettings(SettingsCode.MULTIUSER_MODE.name(), "Многопользовательский режим", "YES");
-        insertSettings(SettingsCode.POST_PREMODERATION.name(), "Премодерация постов", "YES");
-        insertSettings(SettingsCode.STATISTICS_IS_PUBLIC.name(), "Показывать всем статистику блога", "YES");
+        insertSettings(SettingsCode.MULTIUSER_MODE.name(), Blog.SETTINGS_MULTIUSER_MODE_TEXT, Blog.YES_VALUE);
+        insertSettings(SettingsCode.POST_PREMODERATION.name(), Blog.SETTINGS_POST_PREMODERATION_TEXT, Blog.YES_VALUE);
+        insertSettings(SettingsCode.STATISTICS_IS_PUBLIC.name(), Blog.SETTINGS_STATISTICS_IS_PUBLIC_TEXT, Blog.NO_VALUE);
     }
 
     private void insertSettings(String code, String name, String value) {
@@ -80,6 +81,6 @@ public class SettingsService {
     }
 
     private String booleanToString (boolean value) {
-        return value == true ? "YES" : "NO";
+        return value ? "YES" : "NO";
     }
 }

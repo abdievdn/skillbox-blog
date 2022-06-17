@@ -11,13 +11,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class DefaultController {
 
-//    @RequestMapping("/")
-//    public String index() {
-//        return "index";
-//    }
-
-    @Value("${blog.path}")
-    private String defaultPath;
     private static String DEFAULT_PATH;
 
     @Value("${blog.path}")
@@ -29,8 +22,8 @@ public class DefaultController {
         return DEFAULT_PATH;
     }
 
-    @RequestMapping(method = {RequestMethod.OPTIONS, RequestMethod.GET}, value = "/**/{path:[^\\.]*}")
-    public String redirectToIndex() {
+    @RequestMapping(method = {RequestMethod.OPTIONS, RequestMethod.GET}, value = "/**/{path:[^.]*}")
+    public String index() {
         return "forward:/";
     }
 

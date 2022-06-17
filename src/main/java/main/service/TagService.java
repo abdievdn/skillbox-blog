@@ -1,6 +1,6 @@
 package main.service;
 
-import main.api.response.general.InitResponse;
+import lombok.AllArgsConstructor;
 import main.api.response.general.TagResponse;
 import main.api.response.general.TagsResponse;
 import main.model.Post;
@@ -15,20 +15,16 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
+@AllArgsConstructor
 public class TagService {
 
     private final TagRepository tagRepository;
     private final PostRepository postRepository;
 
-    public TagService(TagRepository tagRepository, PostRepository postRepository) {
-        this.tagRepository = tagRepository;
-        this.postRepository = postRepository;
-    }
-
     public TagsResponse getTags() {
         TagsResponse tagsResponse = new TagsResponse();
 
-        // collect tags (name, weight) to map and calculate ratio
+// collect tags (name, weight) to map and calculate ratio
         double ratio;
         int postsCount = getPostsCount();
         Map<String, Double> tagsWeight = new HashMap<>();
@@ -37,7 +33,7 @@ public class TagService {
         for (Tag tag : tagIterable) {
             Set<Post> tagPosts = tag.getPosts();
             int postsToTagCount = 0;
-            // check actual posts for tag
+    // check actual posts for tag
             for (Post postInTag : tagPosts) {
                 if (PostService.isNotActual(postInTag)) {
                     continue;

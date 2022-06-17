@@ -1,5 +1,8 @@
 package main.service;
 
+import lombok.AllArgsConstructor;
+import main.Blog;
+import main.api.request.general.PostModerationRequest;
 import main.api.request.post.*;
 import main.api.request.post.enums.PostModerationDecision;
 import main.api.request.post.enums.PostRequestKey;
@@ -13,6 +16,7 @@ import main.model.*;
 import main.model.repository.*;
 import main.service.enums.PostSortOrder;
 import main.service.utils.TimestampUtil;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
@@ -22,23 +26,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
+@AllArgsConstructor
 public class PostService {
 
-    public static final int MIN_TITLE_LENGTH = 3;
-    public static final int MIN_TEXT_LENGTH = 50;
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final PostCommentService postCommentService;
     private final PostVoteService postVoteService;
-
-    public PostService(PostRepository postRepository, PostCommentRepository postCommentRepository, TagRepository tagRepository, UserRepository userRepository, PostCommentService postCommentService, PostVoteRepository postVoteRepository, PostVoteService postVoteService) {
-        this.postRepository = postRepository;
-        this.tagRepository = tagRepository;
-        this.userRepository = userRepository;
-        this.postCommentService = postCommentService;
-        this.postVoteService = postVoteService;
-    }
+    private final SettingsService settingsService;
 
     public PostsResponse getActualPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
@@ -148,9 +144,7 @@ public class PostService {
         postRepository.save(post);
         postByIdResponse.setId(id);
         postByIdResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
-        UserResponse user = new UserResponse();
-        user.setId(post.getUser().getId());
-        user.setName(post.getUser().getName());
+        UserResponse user = getUserFromPost(post);
         postByIdResponse.setUser(user);
         postByIdResponse.setTitle(post.getTitle());
         postByIdResponse.setText(post.getText());
@@ -167,6 +161,13 @@ public class PostService {
         return postByIdResponse;
     }
 
+    private UserResponse getUserFromPost(Post post) {
+        UserResponse user = new UserResponse();
+        user.setId(post.getUser().getId());
+        user.setName(post.getUser().getName());
+        return user;
+    }
+
     public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID) throws PostAddEditException {
         Post post = postRepository.findById(ID).orElseThrow();
         String author = post.getUser().getEmail();
@@ -180,10 +181,10 @@ public class PostService {
     }
 
     private PostAddEditResponse createUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post) throws PostAddEditException {
-        if (isIncorrectText(postAddEditRequest.getTitle(), MIN_TITLE_LENGTH)) {
+        if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
             throw new PostAddEditException(PostAddEditError.TITLE);
         }
-        if (isIncorrectText(postAddEditRequest.getText(), MIN_TEXT_LENGTH)) {
+        if (isIncorrectText(postAddEditRequest.getText(), Blog.POST_MIN_TEXT_LENGTH)) {
             throw new PostAddEditException(PostAddEditError.TEXT);
         }
         PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
@@ -193,19 +194,21 @@ public class PostService {
         post.setTitle(postAddEditRequest.getTitle());
         post.setText(postAddEditRequest.getText());
         post.setViewCount(0);
-        if (user.getIsModerator() == 0 || post.getModerationStatus() == null) {
+        if (user.getIsModerator() == 0 && settingsService.getGlobalSettings().isPostPremoderation()) {
             post.setModerationStatus(ModerationStatus.NEW);
+        } else {
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
         }
-// ->        compare timestamp
+// compare timestamp
         LocalDateTime addedTime = LocalDateTime.now();
         long nowTimestamp = TimestampUtil.encode(addedTime);
         long postTimestamp = postAddEditRequest.getTimestamp();
         if (postTimestamp > nowTimestamp) {
             addedTime = TimestampUtil.decode(postTimestamp);
         }
-// <-
+//
         post.setTime(addedTime);
-// ->        add tags, checks new or existing tag
+// add tags, checks new or existing tag
         if (postAddEditRequest.getTags().length != 0) {
             Set<Tag> tags = new HashSet<>();
             String[] requestTags = postAddEditRequest.getTags();
@@ -222,7 +225,7 @@ public class PostService {
             }
             post.setTags(tags);
         } else post.setTags(new HashSet<>());
-// <-
+//
         postAddEditResponse.setResult(true);
         postRepository.save(post);
         return postAddEditResponse;
@@ -242,11 +245,6 @@ public class PostService {
                 post.setModerationStatus(ModerationStatus.DECLINED);
                 break;
             default: break;
-        }
-        if (post.getModerator() == null) {
-            post.setModerator(user);
-            user.setModerationCount(user.getModerationCount() + 1);
-            userRepository.save(user);
         }
         postRepository.save(post);
         postModerationResponse.setResult(true);
@@ -295,9 +293,7 @@ public class PostService {
         PostResponse postResponse = new PostResponse();
         postResponse.setId(post.getId());
         postResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
-        UserResponse user = new UserResponse();
-        user.setId(post.getUser().getId());
-        user.setName(post.getUser().getName());
+        UserResponse user = getUserFromPost(post);
         postResponse.setUser(user);
         postResponse.setTitle(post.getTitle());
         postResponse.setAnnounce(announce(post.getText()));
@@ -312,8 +308,21 @@ public class PostService {
         return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() != 1;
     }
 
+    public int getNewPostsCount() {
+        int postsCount = 0;
+        Iterable<Post> postIterable = postRepository.findAll();
+        for (Post post : postIterable) {
+            if (post.getModerationStatus().equals(ModerationStatus.NEW) && post.getIsActive() == 1) {
+                postsCount++;
+            }
+        }
+        return postsCount;
+    }
+
     private String announce(String text) {
-        return text.length() > 150 ? text.substring(0, 150).concat("...") : text;
+        String announceText = text.length() > Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH ?
+                text.substring(0, Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH).concat("...") : text;
+        return Jsoup.parse(announceText).text();
     }
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {

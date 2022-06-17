@@ -1,6 +1,8 @@
 package main.service;
 
+import main.Blog;
 import main.api.request.auth.*;
+import main.api.request.general.ProfileMyRequest;
 import main.api.response.auth.*;
 import main.api.response.general.ProfileMyResponse;
 import main.controller.advice.error.PasswordChangeError;
@@ -15,6 +17,7 @@ import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
 import main.service.utils.ImageUtil;
 import main.service.utils.PasswordUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,18 +40,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final CaptchaCodeRepository captchaRepository;
     private final AuthenticationManager authenticationManager;
-
+    private final PostService postService;
     private final MailSender mailSender;
 
-    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager, MailSender mailSender) {
+    @Value("${blog.info.email}")
+    private String emailFrom;
+
+    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager, PostService postService, MailSender mailSender) {
         this.userRepository = userRepository;
         this.captchaRepository = captchaRepository;
         this.authenticationManager = authenticationManager;
+        this.postService = postService;
         this.mailSender = mailSender;
     }
-
-    private final static String REGEX_NAME = "[\\w\\s\\S]+";
-    public static final int PHOTO_LIMIT_WEIGHT = 5242880;
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
         RegisterResponse registerResponse = new RegisterResponse();
@@ -64,7 +68,7 @@ public class UserService {
             throw new RegisterException(RegisterError.CAPTCHA);
         }
         String userName = registerRequest.getName();
-        if (userName.isEmpty() || !userName.matches(REGEX_NAME)) {
+        if (userName.isEmpty() || !userName.matches(Blog.REGEX_FOR_USER_NAME)) {
             throw new RegisterException(RegisterError.NAME);
         }
         String userPassword = registerRequest.getPassword();
@@ -76,7 +80,6 @@ public class UserService {
         user.setPassword(PasswordUtil.encodePassword(userPassword));
         user.setName(userName);
         user.setIsModerator((short) 0);
-        user.setModerationCount(0);
         user.setPhoto("");
         user.setRegTime(LocalDateTime.now());
         userRepository.save(user);
@@ -127,10 +130,10 @@ public class UserService {
                 throw new ProfileMyException(ProfileMyError.EMAIL);
             }
         }
-        if (profileMyRequest.getName() == null || !profileMyRequest.getName().matches(REGEX_NAME)) {
+        if (profileMyRequest.getName() == null || !profileMyRequest.getName().matches(Blog.REGEX_FOR_USER_NAME)) {
             throw new ProfileMyException(ProfileMyError.NAME);
         }
-        if (profileMyRequest.getPassword() != null && profileMyRequest.getPassword().length() < 6) {
+        if (profileMyRequest.getPassword() != null && profileMyRequest.getPassword().length() < Blog.PASSWORD_MIN_LENGTH) {
             throw new ProfileMyException(ProfileMyError.PASSWORD);
         }
         User user = userRepository.findByEmail(authorizedUser).orElseThrow();
@@ -149,13 +152,13 @@ public class UserService {
         profileMyResponse.setResult(true);
 
         if (photo != null) {
-            if (photo.getBytes().length > PHOTO_LIMIT_WEIGHT) {
+            if (photo.getBytes().length > Blog.PHOTO_LIMIT_WEIGHT) {
                 throw new ProfileMyException(ProfileMyError.PHOTO);
             }
-            String path = "/avatars/";
+            String path = Blog.PATH_FOR_AVATARS;
             String fileName = String.valueOf(user.getId());
             String formatName = ImageUtil.getFormatName(photo);
-            ImageUtil.saveImage(path, fileName, formatName, photo, 90, 90);
+            ImageUtil.saveImage(path, fileName, formatName, photo, Blog.PHOTO_WIDTH, Blog.PHOTO_HEIGHT);
             user.setPhoto(path + fileName + '.' + formatName);
         }
         userRepository.save(user);
@@ -164,7 +167,6 @@ public class UserService {
 
     public PasswordRestoreResponse passwordRestore(PasswordRestoreRequest passwordRestoreRequest) {
         String email = passwordRestoreRequest.getEmail();
-        System.out.println(email);
         PasswordRestoreResponse passwordRestoreResponse = new PasswordRestoreResponse();
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isEmpty()) {
@@ -174,18 +176,20 @@ public class UserService {
         String code = String.valueOf(UUID.randomUUID()).replace("-", "");
         user.get().setCode(code);
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
-        String restoreUrl = baseUrl + "/login/change-password/" + code;
-// ->       send mail
-        SimpleMailMessage simpleMail = new SimpleMailMessage();
-        simpleMail.setFrom("adzmit@yandex.ru");
-        simpleMail.setTo(email);
-        simpleMail.setSubject("Восстановление пароля");
-        simpleMail.setText(restoreUrl);
-        mailSender.send(simpleMail);
-// <-
+        String restoreUrl = baseUrl + Blog.EMAIL_URI_FOR_CHANGE_PASSWORD + code;
+        sendEmail(email, restoreUrl);
         passwordRestoreResponse.setResult(true);
         userRepository.save(user.get());
         return passwordRestoreResponse;
+    }
+
+    private void sendEmail(String email, String text) {
+        SimpleMailMessage simpleMail = new SimpleMailMessage();
+        simpleMail.setFrom(emailFrom);
+        simpleMail.setTo(email);
+        simpleMail.setSubject(Blog.EMAIL_SUBJECT);
+        simpleMail.setText(text);
+        mailSender.send(simpleMail);
     }
 
     public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
@@ -217,7 +221,9 @@ public class UserService {
         userResponse.setPhoto(user.getPhoto());
         userResponse.setEmail(user.getEmail());
         userResponse.setModeration(isModerator(user));
-        userResponse.setModerationCount(user.getModerationCount());
+        if (user.getIsModerator() == 1) {
+            userResponse.setModerationCount(postService.getNewPostsCount());
+        } else userResponse.setModerationCount(0);
         userResponse.setSettings(isModerator(user));
         loginResponse.setResult(true);
         loginResponse.setUser(userResponse);

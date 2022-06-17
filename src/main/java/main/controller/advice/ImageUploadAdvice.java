@@ -18,6 +18,9 @@ public class ImageUploadAdvice {
             case IMAGE:
                 imageErrorsResponse.setImage(e.getMessage());
                 break;
+            case PHOTO:
+                imageErrorsResponse.setPhoto(e.getMessage());
+                break;
             default: break;
         }
         imageResponse.setResult(false);

@@ -1,9 +1,11 @@
 package main.controller.advice.error;
 
+import main.Blog;
+
 public enum PasswordChangeError {
-     CODE("Ссылка для восстановления пароля устарела. <a href=\"../restore-password\">Запросить ссылку снова</a>"),
-     PASSWORD("Пароль короче 6-ти символов"),
-     CAPTCHA("Код с картинки введён неверно");
+     CODE(Blog.ERROR_MESSAGE_OUTDATED_LINK),
+     PASSWORD(Blog.ERROR_MESSAGE_PASSWORD_LENGTH),
+     CAPTCHA(Blog.ERROR_MESSAGE_CAPTCHA_CODE);
 
      private final String error;
 

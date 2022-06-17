@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.AllArgsConstructor;
 import main.api.request.post.PostVoteRequest;
 import main.api.response.post.PostVoteResponse;
 import main.model.Post;
@@ -15,17 +16,12 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class PostVoteService {
 
     private final PostVoteRepository postVoteRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-
-    public PostVoteService(PostVoteRepository postVoteRepository, PostRepository postRepository, UserRepository userRepository) {
-        this.postVoteRepository = postVoteRepository;
-        this.postRepository = postRepository;
-        this.userRepository = userRepository;
-    }
 
     public PostVoteResponse addPostVote(PostVoteRequest postVoteRequest, short value, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
@@ -33,11 +29,7 @@ public class PostVoteService {
         PostVoteResponse postVoteResponse = new PostVoteResponse();
         PostVote postVote;
         Optional<PostVote> postVoteIsPresent = postVoteRepository.findByUserAndPost(user, post);
-        if (postVoteIsPresent.isPresent()) {
-            postVote = postVoteIsPresent.get();
-        } else {
-            postVote = new PostVote();
-        }
+        postVote = postVoteIsPresent.orElseGet(PostVote::new);
         postVote.setUser(user);
         postVote.setPost(post);
         postVote.setTime(LocalDateTime.now());

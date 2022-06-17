@@ -1,9 +1,9 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.api.request.auth.ProfileMyRequest;
-import main.api.request.post.PostCommentAddRequest;
-import main.api.request.post.PostModerationRequest;
+import main.api.request.general.ProfileMyRequest;
+import main.api.request.general.PostCommentAddRequest;
+import main.api.request.general.PostModerationRequest;
 import main.api.request.general.SettingsRequest;
 import main.api.response.BlogResponse;
 import main.api.response.general.*;
@@ -26,9 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.Principal;
 
-@AllArgsConstructor
 @RestController
 @RequestMapping("/api")
+@AllArgsConstructor
 public class ApiGeneralController {
 
     private final InitResponse initResponse;

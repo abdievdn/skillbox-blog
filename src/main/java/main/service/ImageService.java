@@ -1,5 +1,6 @@
 package main.service;
 
+import main.Blog;
 import main.controller.advice.error.ImageUploadError;
 import main.controller.advice.exception.ImageUploadException;
 import main.service.utils.ImageUtil;
@@ -13,15 +14,12 @@ import java.util.UUID;
 
 @Service
 public class ImageService {
-
-    public static final int IMAGE_LIMIT_WEIGHT = 10485760;
-
     public String uploadImage(MultipartFile image) throws ImageUploadException, IOException {
         if (image != null) {
-            if (image.getBytes().length > IMAGE_LIMIT_WEIGHT) {
+            if (image.getBytes().length > Blog.IMAGE_LIMIT_WEIGHT) {
                 throw new ImageUploadException(ImageUploadError.IMAGE);
             }
-            String uploadDir = "/upload/";
+            String uploadDir = Blog.PATH_FOR_UPLOAD;
             String randomDirs = UUID.randomUUID().toString();
             uploadDir +=
                     randomDirs.substring(0, 2) + "/" +

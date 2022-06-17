@@ -8,11 +8,12 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 public class ImageUtil {
 
     public static void saveImage(String uploadDir, String fileName, String formatName, MultipartFile file, int width, int height) throws IOException {
-        if (!file.getContentType().equals("image/jpeg"))
+        if (!Objects.requireNonNull(file.getContentType()).equals("image/jpeg"))
             if (!file.getContentType().equals("image/png")) {
                 throw new IOException();
             }
@@ -26,13 +27,12 @@ public class ImageUtil {
         image.drawImage(photoInput, 0, 0, width, height, null);
         image.dispose();
         File path = new File(DefaultController.getDefaultPath() + uploadDir);
-        System.out.println(path);
-        if (!path.exists()) path.mkdirs();
+        if (!path.exists() && !path.mkdirs()) return;
         ImageIO.write(photoOutput, formatName, new File(path, fileName + '.' + formatName));
     }
 
     public static String getFormatName(MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
-        return originalFileName.substring(originalFileName.lastIndexOf('.') + 1);
+        return Objects.requireNonNull(originalFileName).substring(originalFileName.lastIndexOf('.') + 1);
     }
 }
