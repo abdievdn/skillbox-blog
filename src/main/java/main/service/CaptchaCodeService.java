@@ -2,9 +2,11 @@ package main.service;
 
 import com.github.cage.Cage;
 import com.github.cage.GCage;
+import lombok.AllArgsConstructor;
+import main.Blog;
 import main.model.CaptchaCode;
 import main.model.repository.CaptchaCodeRepository;
-import main.api.response.CaptchaCodeResponse;
+import main.api.response.auth.CaptchaCodeResponse;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -14,13 +16,10 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Service
+@AllArgsConstructor
 public class CaptchaCodeService {
 
     private final CaptchaCodeRepository captchaCodeRepository;
-
-    public CaptchaCodeService(CaptchaCodeRepository captchaCodeRepository) {
-        this.captchaCodeRepository = captchaCodeRepository;
-    }
 
     public CaptchaCodeResponse generateCaptcha() {
         deleteExpiredCaptcha();
@@ -52,7 +51,7 @@ public class CaptchaCodeService {
         Iterable<CaptchaCode> captchaCodeIterable = captchaCodeRepository.findAll();
         for (CaptchaCode captcha : captchaCodeIterable) {
             Duration duration = Duration.between(captcha.getTime(), now);
-            if (duration.toMinutes() >= 60) {
+            if (duration.toMinutes() >= Blog.CAPTCHA_TIME_EXPIRED_MIN) {
                 captchaCodeRepository.deleteById(captcha.getId());
             }
         }

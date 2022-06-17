@@ -1,12 +1,12 @@
 package main.service;
 
-import main.model.ModerationStatus;
+import lombok.AllArgsConstructor;
+import main.api.response.general.TagResponse;
+import main.api.response.general.TagsResponse;
 import main.model.Post;
 import main.model.Tag;
 import main.model.repository.PostRepository;
 import main.model.repository.TagRepository;
-import main.api.response.TagResponse;
-import main.api.response.TagsResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,28 +15,32 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
+@AllArgsConstructor
 public class TagService {
 
     private final TagRepository tagRepository;
     private final PostRepository postRepository;
 
-    public TagService(TagRepository tagRepository, PostRepository postRepository) {
-        this.tagRepository = tagRepository;
-        this.postRepository = postRepository;
-    }
-
     public TagsResponse getTags() {
         TagsResponse tagsResponse = new TagsResponse();
 
-        // collect tags (name, weight) to map and calculate ratio
+// collect tags (name, weight) to map and calculate ratio
         double ratio;
         int postsCount = getPostsCount();
         Map<String, Double> tagsWeight = new HashMap<>();
         double popularTagRawWeight = 0;
         Iterable<Tag> tagIterable = tagRepository.findAll();
         for (Tag tag : tagIterable) {
-            int postsToTagsCount = tag.getPosts().size();
-            double rawWeight = calculateRawWeight(postsToTagsCount, postsCount);
+            Set<Post> tagPosts = tag.getPosts();
+            int postsToTagCount = 0;
+    // check actual posts for tag
+            for (Post postInTag : tagPosts) {
+                if (PostService.isNotActual(postInTag)) {
+                    continue;
+                }
+                postsToTagCount++;
+            }
+            double rawWeight = calculateRawWeight(postsToTagCount, postsCount);
             if (rawWeight > popularTagRawWeight) {
                 popularTagRawWeight = rawWeight;
             }
@@ -46,7 +50,6 @@ public class TagService {
             return tagsResponse;
         }
         ratio = 1 / popularTagRawWeight;
-
         Set<TagResponse> tags = new CopyOnWriteArraySet<>();
         for (Map.Entry<String, Double> entry : tagsWeight.entrySet()) {
             TagResponse tagResponse = new TagResponse();
@@ -68,7 +71,7 @@ public class TagService {
         int count = 0;
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (post.getIsActive() != 1 || !post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
+            if (PostService.isNotActual(post)) {
                 continue;
             }
             count++;

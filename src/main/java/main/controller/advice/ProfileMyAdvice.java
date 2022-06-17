@@ -1,19 +1,20 @@
 package main.controller.advice;
 
-import main.api.response.ProfileMyErrorResponse;
-import main.api.response.ProfileMyResponse;
-import org.springframework.http.HttpStatus;
+import main.api.response.general.ProfileMyErrorsResponse;
+import main.api.response.general.ProfileMyResponse;
+import main.controller.advice.exception.ProfileMyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 public class ProfileMyAdvice {
 
-    @ExceptionHandler(ProfileMyException.class)
+    @ExceptionHandler({ProfileMyException.class, MaxUploadSizeExceededException.class})
     public ResponseEntity<ProfileMyResponse> handleException(ProfileMyException e) {
         ProfileMyResponse profileMyResponse = new ProfileMyResponse();
-        ProfileMyErrorResponse profileMyErrorResponse = new ProfileMyErrorResponse();
+        ProfileMyErrorsResponse profileMyErrorResponse = new ProfileMyErrorsResponse();
         switch (e.getProfileMyError()) {
             case EMAIL:
                 profileMyErrorResponse.setEmail(e.getMessage());
@@ -33,6 +34,6 @@ public class ProfileMyAdvice {
         }
         profileMyResponse.setResult(false);
         profileMyResponse.setErrors(profileMyErrorResponse);
-        return new ResponseEntity<>(profileMyResponse, HttpStatus.OK);
+        return ResponseEntity.ok(profileMyResponse);
     }
 }

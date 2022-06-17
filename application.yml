@@ -13,13 +13,34 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 100MB
+      max-request-size: 10MB
+  mail:
+    host: smtp.yandex.ru
+    port: 465
+    username: adzmit
+    password: uhsdpwviyxeuhaug
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: true
+  web:
+    resources:
+      static-locations: file:/blogfiles, classpath:/static, classpath:/templates
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
 
 blog:
-  title: DevPub
-  subtitle: Рассказы разработчиков
-  phone: +375 29 7089887
-  email: abdiev.dn@yandex.by
-  copyright: Дмитрий Абдиев
-  copyrightFrom: 2022
-
+  path: /blogfiles
+  info:
+    title: DevPub
+    subtitle: Рассказы разработчиков
+    phone: +375 29 7089887
+    email: adzmit@yandex.ru
+    copyright: Дмитрий Абдиев
+    copyrightFrom: 2022

@@ -21,7 +21,7 @@ public class CaptchaCode {
     private LocalDateTime time;
 
     @Column(nullable = false, columnDefinition = "TINYTEXT")
-    private String code; // picture link
+    private String code; // code from image
 
     @Column(nullable = false, columnDefinition = "TINYTEXT", name = "secret_code")
     private String secretCode; // key

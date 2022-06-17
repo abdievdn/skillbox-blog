@@ -1,77 +1,102 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.api.request.PostRequest;
-import main.api.response.CalendarResponse;
-import main.api.response.PostByIdResponse;
-import main.api.response.PostsResponse;
+import main.api.request.post.*;
+import main.api.request.post.enums.PostRequestKey;
+import main.api.response.BlogResponse;
+import main.api.response.post.*;
+import main.controller.advice.exception.PostAddEditException;
 import main.service.PostService;
-import main.api.request.PostRequestKey;
+import main.service.PostVoteService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/post")
 public class ApiPostController {
 
     private final PostService postService;
+    private final PostVoteService postVoteService;
 
-    @GetMapping("/post")
-    public ResponseEntity<PostsResponse> post(PostRequest postRequest) {
+    @GetMapping
+    public ResponseEntity<BlogResponse> post(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getActualPosts(postRequest, PostRequestKey.ALL);
-        return checkPostResponseEntity(postsResponse);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    @GetMapping("/post/search")
-    public ResponseEntity<PostsResponse> postSearch(PostRequest postRequest) {
+    @GetMapping("/search")
+    public ResponseEntity<BlogResponse> postSearch(PostRequest postRequest) {
         PostsResponse postsResponse = postService.searchPosts(postRequest, PostRequestKey.SEARCH);
-        return checkPostResponseEntity(postsResponse);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    @GetMapping("/post/byDate")
-    public ResponseEntity<PostsResponse> postByDate(PostRequest postRequest) {
+    @GetMapping("/byDate")
+    public ResponseEntity<BlogResponse> postByDate(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getPostsByDate(postRequest, PostRequestKey.DATE);
-        return checkPostResponseEntity(postsResponse);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    @GetMapping("/post/byTag")
-    public ResponseEntity<PostsResponse> postByTag(PostRequest postRequest) {
+    @GetMapping("/byTag")
+    public ResponseEntity<BlogResponse> postByTag(PostRequest postRequest) {
         PostsResponse postsResponse = postService.getPostsByTag(postRequest, PostRequestKey.TAG);
-        return checkPostResponseEntity(postsResponse);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    @GetMapping("/post/{ID}")
-    public ResponseEntity<PostByIdResponse> postById(@PathVariable int ID) {
+    @GetMapping("/{ID}")
+    public ResponseEntity<BlogResponse> postById(@PathVariable int ID) {
         PostByIdResponse postByIdResponse = postService.getPostById(ID);
-        if (postByIdResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(postByIdResponse);
+        return DefaultController.checkResponse(postByIdResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
-    @GetMapping("/post/my")
-    public ResponseEntity<PostsResponse> postMy(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsMy(postRequest);
-        return checkPostResponseEntity(postsResponse);
+    @GetMapping("/my")
+    public ResponseEntity<BlogResponse> postMy(PostRequest postRequest, Principal principal) {
+        PostsResponse postsResponse = postService.getPostsMy(postRequest, principal);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    @GetMapping("/calendar")
-    public ResponseEntity<CalendarResponse> calendar() {
-        CalendarResponse calendarResponse = postService.getYears();
-        if (calendarResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(calendarResponse);
+    @PreAuthorize("hasAuthority('user:moderate')")
+    @GetMapping("/moderation")
+    public ResponseEntity<BlogResponse> postModeration(PostRequest postRequest, Principal principal) {
+        PostsResponse postsResponse = postService.getPostsModeration(postRequest, principal);
+        return DefaultController.checkResponse(postsResponse);
     }
 
-    private ResponseEntity<PostsResponse> checkPostResponseEntity(PostsResponse postsResponse) {
-        if (postsResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(postsResponse);
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BlogResponse> postAdd(@RequestBody PostAddEditRequest postAddRequest,
+                                                       Principal principal) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.addPost(postAddRequest, principal);
+        return DefaultController.checkResponse(postAddResponse);
     }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PutMapping(value = "/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BlogResponse> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
+                                                        @PathVariable int ID) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID);
+        if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        return DefaultController.checkResponse(postAddResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/like")
+    public ResponseEntity<BlogResponse> like(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) 1, principal);
+        return DefaultController.checkResponse(postVoteResponse);
+    }
+
+    @PreAuthorize("hasAuthority('user:write')")
+    @PostMapping("/dislike")
+    public ResponseEntity<BlogResponse> dislike(@RequestBody PostVoteRequest postVoteRequest, Principal principal) {
+        PostVoteResponse postVoteResponse = postVoteService.addPostVote(postVoteRequest, (short) -1, principal);
+        return DefaultController.checkResponse(postVoteResponse);
+    }
+
 }

@@ -1,35 +1,40 @@
 package main.service;
 
-import main.api.request.PostRequestStatus;
-import main.api.response.*;
-import main.model.ModerationStatus;
-import main.model.Post;
-import main.model.PostComment;
-import main.model.Tag;
-import main.model.repository.PostCommentRepository;
-import main.model.repository.PostRepository;
-import main.api.request.PostRequest;
-import main.api.request.PostRequestKey;
-import org.springframework.security.core.context.SecurityContextHolder;
+import lombok.AllArgsConstructor;
+import main.Blog;
+import main.api.request.general.PostModerationRequest;
+import main.api.request.post.*;
+import main.api.request.post.enums.PostModerationDecision;
+import main.api.request.post.enums.PostRequestKey;
+import main.api.request.post.enums.PostRequestStatus;
+import main.api.response.auth.UserResponse;
+import main.api.response.general.PostModerationResponse;
+import main.api.response.post.*;
+import main.controller.advice.error.PostAddEditError;
+import main.controller.advice.exception.PostAddEditException;
+import main.model.*;
+import main.model.repository.*;
+import main.service.enums.PostSortOrder;
+import main.service.utils.TimestampUtil;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
+@AllArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
-    private final PostCommentRepository postCommentRepository;
-
-    public PostService(PostRepository postRepository, PostCommentRepository postCommentRepository) {
-        this.postRepository = postRepository;
-        this.postCommentRepository = postCommentRepository;
-    }
+    private final TagRepository tagRepository;
+    private final UserRepository userRepository;
+    private final PostCommentService postCommentService;
+    private final PostVoteService postVoteService;
+    private final SettingsService settingsService;
 
     public PostsResponse getActualPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
@@ -42,7 +47,7 @@ public class PostService {
     public PostsResponse searchPosts(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getQuery(), key);
-        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -50,7 +55,7 @@ public class PostService {
     public PostsResponse getPostsByDate(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getDate(), key);
-        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -58,39 +63,76 @@ public class PostService {
     public PostsResponse getPostsByTag(PostRequest postRequest, PostRequestKey key) {
         PostsResponse postsResponse = new PostsResponse();
         List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
-        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
 
-    public PostsResponse getPostsMy(PostRequest postRequest) {
+    public PostsResponse getPostsMy(PostRequest postRequest, Principal principal) {
         int count = 0;
         PostsResponse postsResponse = new PostsResponse();
-        String authorizedUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        String authorizedUser = principal.getName();
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post: postIterable) {
+        for (Post post : postIterable) {
             if (!post.getUser().getEmail().equals(authorizedUser)) continue;
-            switch (PostRequestStatus.valueOf(postRequest.getStatus())) {
-                case inactive:
+            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
+                case INACTIVE:
                     if (post.getIsActive() == 1) continue;
                     break;
-                case pending:
+                case PENDING:
+                    if (post.getIsActive() != 1) continue;
                     if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
                     break;
-                case declined:
+                case DECLINED:
+                    if (post.getIsActive() != 1) continue;
                     if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
                     break;
-                case published:
+                case PUBLISHED:
+                    if (post.getIsActive() != 1) continue;
                     if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
                     break;
-                default: break;
+                default:
+                    break;
             }
             postExtraction(posts, post);
             count++;
         }
         postsResponse.setCount(count);
-        sortPostsByMode(PostSortOrder.recent.name(), posts);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
+        return postsResponse;
+    }
+
+    public PostsResponse getPostsModeration(PostRequest postRequest, Principal principal) {
+        int count = 0;
+        PostsResponse postsResponse = new PostsResponse();
+        String authorizedUser = principal.getName();
+        List<PostResponse> posts = new CopyOnWriteArrayList<>();
+        Iterable<Post> postIterable = postRepository.findAll();
+        for (Post post : postIterable) {
+            if (post.getModerator() != null && !post.getModerator().getEmail().equals(authorizedUser)) continue;
+            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
+                case NEW:
+                    if (post.getIsActive() != 1) continue;
+                    if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
+                    break;
+                case ACCEPTED:
+                    if (post.getIsActive() != 1) continue;
+                    if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
+                    break;
+                case DECLINED:
+                    if (post.getIsActive() != 1) continue;
+                    if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
+                    break;
+                default:
+                    break;
+            }
+            postExtraction(posts, post);
+            count++;
+        }
+        postsResponse.setCount(count);
+        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
         postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
         return postsResponse;
     }
@@ -98,33 +140,18 @@ public class PostService {
     public PostByIdResponse getPostById(int id) {
         PostByIdResponse postByIdResponse = new PostByIdResponse();
         Post post = postRepository.findById(id).orElseThrow();
+        post.setViewCount(post.getViewCount() + 1);
+        postRepository.save(post);
         postByIdResponse.setId(id);
-        postByIdResponse.setTimestamp(calculateTimestamp(post.getTime()));
-        UserResponse user = new UserResponse();
-        user.setId(post.getUser().getId());
-        user.setName(post.getUser().getName());
+        postByIdResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
+        UserResponse user = getUserFromPost(post);
         postByIdResponse.setUser(user);
-        postByIdResponse.setTittle(post.getTitle());
+        postByIdResponse.setTitle(post.getTitle());
         postByIdResponse.setText(post.getText());
-        postByIdResponse.setLikeCount(0); // todo
-        postByIdResponse.setDislikeCount(0); //todo
-        postByIdResponse.setViewCount(0); // todo
-        PostCommentResponse postCommentResponse = new PostCommentResponse();
-        List<PostCommentResponse> commentsToPost = new CopyOnWriteArrayList<>();
-        Iterable<PostComment> comments = postCommentRepository.findAll();
-        for (PostComment comment : comments) {
-            if (comment.getPost().getId() == post.getId()) {
-                postCommentResponse.setId(comment.getId());
-                postCommentResponse.setTimestamp(calculateTimestamp(comment.getTime()));
-                postCommentResponse.setText(comment.getText());
-                UserResponse userToComment = new UserResponse();
-                userToComment.setId(comment.getUser().getId());
-                userToComment.setName(comment.getUser().getName());
-                userToComment.setPhoto(comment.getUser().getPhoto());
-                postCommentResponse.setUser(userToComment);
-                commentsToPost.add(postCommentResponse);
-            }
-        }
+        postByIdResponse.setLikeCount(postVoteService.getPostVoteCount(post.getId(), (short) 1));
+        postByIdResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
+        postByIdResponse.setViewCount(post.getViewCount());
+        List<PostCommentResponse> commentsToPost = postCommentService.getComments(post.getId());
         postByIdResponse.setComments(commentsToPost);
         Set<String> tagsToPost = new CopyOnWriteArraySet<>();
         for (Tag tag : post.getTags()) {
@@ -134,25 +161,98 @@ public class PostService {
         return postByIdResponse;
     }
 
-    public CalendarResponse getYears() {
-        CalendarResponse calendarResponse = new CalendarResponse();
-        TreeSet<Integer> calendarYears = new TreeSet<>();
-        Map<String, Integer> calendarPosts = new TreeMap<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (isNotActual(post)) continue;
-            LocalDateTime postDate = post.getTime();
-            calendarYears.add(postDate.getYear());
-            String postDateFormat = postDate.toLocalDate().toString();
-            if (calendarPosts.containsKey(postDateFormat)) {
-                calendarPosts.put(postDateFormat, calendarPosts.get(postDateFormat) + 1);
-            } else {
-                calendarPosts.put(postDateFormat, 1);
-            }
+    private UserResponse getUserFromPost(Post post) {
+        UserResponse user = new UserResponse();
+        user.setId(post.getUser().getId());
+        user.setName(post.getUser().getName());
+        return user;
+    }
+
+    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID) throws PostAddEditException {
+        Post post = postRepository.findById(ID).orElseThrow();
+        String author = post.getUser().getEmail();
+        return createUpdatePost(postAddEditRequest, author, post);
+    }
+
+    public PostAddEditResponse addPost(PostAddEditRequest postAddEditRequest, Principal principal)
+            throws PostAddEditException {
+        String author = principal.getName();
+        return createUpdatePost(postAddEditRequest, author, new Post());
+    }
+
+    private PostAddEditResponse createUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post) throws PostAddEditException {
+        if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
+            throw new PostAddEditException(PostAddEditError.TITLE);
         }
-        calendarResponse.setYears(calendarYears);
-        calendarResponse.setPosts(calendarPosts);
-        return calendarResponse;
+        if (isIncorrectText(postAddEditRequest.getText(), Blog.POST_MIN_TEXT_LENGTH)) {
+            throw new PostAddEditException(PostAddEditError.TEXT);
+        }
+        PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
+        User user = userRepository.findByEmail(author).orElseThrow();
+        post.setUser(user);
+        post.setIsActive(postAddEditRequest.getActive());
+        post.setTitle(postAddEditRequest.getTitle());
+        post.setText(postAddEditRequest.getText());
+        post.setViewCount(0);
+        if (user.getIsModerator() == 0 && settingsService.getGlobalSettings().isPostPremoderation()) {
+            post.setModerationStatus(ModerationStatus.NEW);
+        } else {
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
+        }
+// compare timestamp
+        LocalDateTime addedTime = LocalDateTime.now();
+        long nowTimestamp = TimestampUtil.encode(addedTime);
+        long postTimestamp = postAddEditRequest.getTimestamp();
+        if (postTimestamp > nowTimestamp) {
+            addedTime = TimestampUtil.decode(postTimestamp);
+        }
+//
+        post.setTime(addedTime);
+// add tags, checks new or existing tag
+        if (postAddEditRequest.getTags().length != 0) {
+            Set<Tag> tags = new HashSet<>();
+            String[] requestTags = postAddEditRequest.getTags();
+            for (String requestTag : requestTags) {
+                Optional<Tag> tag = tagRepository.findByName(requestTag);
+                if (tag.isPresent()) {
+                    tags.add(tag.get());
+                } else {
+                    Tag newTag = new Tag();
+                    newTag.setName(requestTag);
+                    tagRepository.save(newTag);
+                    tags.add(newTag);
+                }
+            }
+            post.setTags(tags);
+        } else post.setTags(new HashSet<>());
+//
+        postAddEditResponse.setResult(true);
+        postRepository.save(post);
+        return postAddEditResponse;
+    }
+
+    public PostModerationResponse postModerate(PostModerationRequest postModerationRequest, Principal principal) {
+        String authorizedUser = principal.getName();
+        User user = userRepository.findByEmail(authorizedUser).orElseThrow();
+        if (user.getIsModerator() != 1) return null;
+        PostModerationResponse postModerationResponse = new PostModerationResponse();
+        Post post = postRepository.findById(postModerationRequest.getPostId()).orElseThrow();
+        switch (PostModerationDecision.valueOf(postModerationRequest.getDecision().toUpperCase())) {
+            case ACCEPT:
+                post.setModerationStatus(ModerationStatus.ACCEPTED);
+                break;
+            case DECLINE:
+                post.setModerationStatus(ModerationStatus.DECLINED);
+                break;
+            default: break;
+        }
+        postRepository.save(post);
+        postModerationResponse.setResult(true);
+        return postModerationResponse;
+    }
+
+    private boolean isIncorrectText(String text, int textLength) {
+        return text.isEmpty() || text.length() < textLength;
     }
 
     private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, PostRequestKey key) {
@@ -179,7 +279,8 @@ public class PostService {
                     }
                     if (noTag) continue;
                     break;
-                default: break;
+                default:
+                    break;
             }
             postExtraction(posts, post);
             count++;
@@ -191,48 +292,55 @@ public class PostService {
     private void postExtraction(List<PostResponse> posts, Post post) {
         PostResponse postResponse = new PostResponse();
         postResponse.setId(post.getId());
-        postResponse.setTimestamp(calculateTimestamp(post.getTime()));
-        UserResponse user = new UserResponse();
-        user.setId(post.getUser().getId());
-        user.setName(post.getUser().getName());
+        postResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
+        UserResponse user = getUserFromPost(post);
         postResponse.setUser(user);
-        postResponse.setTittle(post.getTitle());
+        postResponse.setTitle(post.getTitle());
         postResponse.setAnnounce(announce(post.getText()));
-        postResponse.setLikeCount(0); // todo
-        postResponse.setDislikeCount(0); //todo
-        postResponse.setCommentCount(0); //todo
+        postResponse.setLikeCount(postVoteService.getPostVoteCount(post.getId(), (short) 1));
+        postResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
+        postResponse.setCommentCount(postCommentService.getCommentsCount(post.getId()));
         postResponse.setViewCount(post.getViewCount());
         posts.add(postResponse);
     }
 
-    private long calculateTimestamp(LocalDateTime time) {
-        ZonedDateTime zdt = ZonedDateTime.of(time, ZoneId.systemDefault());
-        return zdt.toInstant().toEpochMilli() / 1000;
+    public static boolean isNotActual(Post post) {
+        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() != 1;
     }
 
-    private boolean isNotActual(Post post) {
-        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() !=1;
+    public int getNewPostsCount() {
+        int postsCount = 0;
+        Iterable<Post> postIterable = postRepository.findAll();
+        for (Post post : postIterable) {
+            if (post.getModerationStatus().equals(ModerationStatus.NEW) && post.getIsActive() == 1) {
+                postsCount++;
+            }
+        }
+        return postsCount;
     }
 
     private String announce(String text) {
-        return text.substring(0, 150).concat("...");
+        String announceText = text.length() > Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH ?
+                text.substring(0, Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH).concat("...") : text;
+        return Jsoup.parse(announceText).text();
     }
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {
-        switch (PostSortOrder.valueOf(mode)) {
-            case recent:
+        switch (PostSortOrder.valueOf(mode.toUpperCase())) {
+            case RECENT:
                 posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getTimestamp)));
                 break;
-            case early:
+            case EARLY:
                 posts.sort(Comparator.comparing(PostResponse::getTimestamp));
                 break;
-            case best:
-                posts.sort(Comparator.comparing(PostResponse::getLikeCount));
+            case BEST:
+                posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getLikeCount)));
                 break;
-            case popular:
-                posts.sort(Comparator.comparing(PostResponse::getViewCount));
+            case POPULAR:
+                posts.sort(Collections.reverseOrder(Comparator.comparing(PostResponse::getCommentCount)));
                 break;
-            default: break;
+            default:
+                break;
         }
     }
 

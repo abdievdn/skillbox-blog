@@ -1,14 +1,15 @@
 package main.controller;
 
 import lombok.AllArgsConstructor;
-import main.api.request.LoginRequest;
-import main.api.request.ProfileMyRequest;
-import main.api.response.*;
-import main.controller.advice.RegisterException;
-import main.api.request.RegisterRequest;
+import main.api.request.auth.*;
+import main.api.response.BlogResponse;
+import main.api.response.auth.*;
+import main.api.response.auth.CaptchaCodeResponse;
+import main.controller.advice.exception.PasswordChangeException;
+import main.controller.advice.exception.RegisterException;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
-import org.springframework.http.HttpStatus;
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,50 +25,46 @@ public class ApiAuthController {
     private final UserService userService;
 
     @GetMapping("/check")
-    public ResponseEntity<LoginResponse> check(Principal principal) {
+    public ResponseEntity<BlogResponse> check(Principal principal) {
         LoginResponse loginResponse = userService.checkUser(principal);
-        if (loginResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(loginResponse);
+        return DefaultController.checkResponse(loginResponse);
     }
 
     @GetMapping("/captcha")
-    public ResponseEntity<CaptchaCodeResponse> captcha() {
+    public ResponseEntity<BlogResponse> captcha() {
         CaptchaCodeResponse captchaResponse = captchaService.generateCaptcha();
-        if (captchaResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(captchaResponse);
+        return DefaultController.checkResponse(captchaResponse);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) throws RegisterException {
+    public ResponseEntity<BlogResponse> register(@RequestBody RegisterRequest registerRequest)
+            throws RegisterException, FileSizeLimitExceededException {
         RegisterResponse registerResponse = userService.userRegister(registerRequest);
-        if (registerResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(registerResponse);
+        return DefaultController.checkResponse(registerResponse);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<BlogResponse> login(@RequestBody LoginRequest loginRequest) {
         LoginResponse loginResponse = userService.userLogin(loginRequest);
-        if (loginResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(loginResponse);
+        return DefaultController.checkResponse(loginResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/logout")
-    public ResponseEntity<LogoutResponse> logout() {
+    public ResponseEntity<BlogResponse> logout() {
         LogoutResponse logoutResponse = userService.userLogout();
-        if (logoutResponse == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(logoutResponse);
+        return DefaultController.checkResponse(logoutResponse);
     }
 
+    @PostMapping("/restore")
+    public ResponseEntity<BlogResponse> passwordRestore(@RequestBody PasswordRestoreRequest passwordRestoreRequest) {
+        PasswordRestoreResponse passwordRestoreResponse = userService.passwordRestore(passwordRestoreRequest);
+        return DefaultController.checkResponse(passwordRestoreResponse);
+    }
 
+    @PostMapping("/password")
+    public ResponseEntity<BlogResponse> passwordChange(@RequestBody PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
+        PasswordChangeResponse passwordChangeResponse = userService.passwordChange(passwordChangeRequest);
+        return DefaultController.checkResponse(passwordChangeResponse);
+    }
 }

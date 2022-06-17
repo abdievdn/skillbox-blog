@@ -21,9 +21,6 @@ public class User {
     @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
     private short isModerator;
 
-    @Column(nullable = false, name = "moderation_count")
-    private int moderationCount;
-
     @Column(nullable = false, name = "reg_time")
     private LocalDateTime regTime;
 
