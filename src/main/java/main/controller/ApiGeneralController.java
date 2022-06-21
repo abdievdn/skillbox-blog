@@ -31,7 +31,7 @@ import java.security.Principal;
 @AllArgsConstructor
 public class ApiGeneralController {
 
-    private final InitResponse initResponse;
+    private final InitService initService;
     private final SettingsService settingsService;
     private final TagService tagService;
     private final ImageService imageService;
@@ -42,8 +42,8 @@ public class ApiGeneralController {
     private final UserService userService;
 
     @GetMapping("/init")
-    public InitResponse init() {
-        return initResponse;
+    public ResponseEntity<BlogResponse> init() {
+        return DefaultController.checkResponse(initService.getInitInfo());
     }
 
     @GetMapping("/settings")

@@ -16,7 +16,7 @@ public class UserResponse implements BlogResponse {
     private Boolean moderation;
     private Integer moderationCount;
     private Boolean settings;
-    private String captcha = null;
+    private String captcha;
     @JsonProperty("captcha_secret")
-    private String captchaSecret = null;
+    private String captchaSecret;
 }

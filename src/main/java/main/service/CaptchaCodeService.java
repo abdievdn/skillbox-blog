@@ -13,6 +13,7 @@ import java.io.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -55,5 +56,10 @@ public class CaptchaCodeService {
                 captchaCodeRepository.deleteById(captcha.getId());
             }
         }
+    }
+
+    public boolean checkCaptchaCode(String captchaCode, String captchaSecretCode) {
+        Optional<CaptchaCode> captcha = captchaCodeRepository.findByCode(captchaCode);
+        return captcha.isPresent() && captcha.get().getSecretCode().equals(captchaSecretCode);
     }
 }

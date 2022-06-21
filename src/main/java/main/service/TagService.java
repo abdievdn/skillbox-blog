@@ -78,4 +78,8 @@ public class TagService {
         }
         return count;
     }
+
+    public Tag getTagByName(String name) {
+        return tagRepository.findByName(name).isPresent() ? tagRepository.findByName(name).get() : null;
+    }
 }

@@ -11,12 +11,9 @@ import main.controller.advice.exception.PasswordChangeException;
 import main.controller.advice.exception.ProfileMyException;
 import main.controller.advice.error.RegisterError;
 import main.controller.advice.exception.RegisterException;
-import main.model.CaptchaCode;
 import main.model.User;
-import main.model.repository.CaptchaCodeRepository;
 import main.model.repository.UserRepository;
 import main.service.utils.ImageUtil;
-import main.service.utils.PasswordUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -24,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -38,20 +36,32 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final CaptchaCodeRepository captchaRepository;
+    private final CaptchaCodeService captchaCodeService;
     private final AuthenticationManager authenticationManager;
     private final PostService postService;
+    private final PasswordEncoder passwordEncoder;
     private final MailSender mailSender;
 
     @Value("${blog.info.email}")
     private String emailFrom;
 
-    public UserService(UserRepository userRepository, CaptchaCodeRepository captchaRepository, AuthenticationManager authenticationManager, PostService postService, MailSender mailSender) {
+    public UserService(UserRepository userRepository, CaptchaCodeService captchaCodeService, AuthenticationManager authenticationManager, PostService postService, PasswordEncoder passwordEncoder, MailSender mailSender) {
         this.userRepository = userRepository;
-        this.captchaRepository = captchaRepository;
+        this.captchaCodeService = captchaCodeService;
         this.authenticationManager = authenticationManager;
         this.postService = postService;
+        this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
+    }
+
+    public LoginResponse checkUser(Principal principal) {
+        LoginResponse loginResponse = new LoginResponse();
+        if (principal != null) {
+            createLoginResponse(loginResponse, principal.getName());
+        } else {
+            loginResponse.setResult(false);
+        }
+        return loginResponse;
     }
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
@@ -59,12 +69,7 @@ public class UserService {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new RegisterException(RegisterError.EMAIL);
         }
-        Optional<CaptchaCode> captchaCode = captchaRepository.findByCode(registerRequest.getCaptcha());
-        if (captchaCode.isPresent()) {
-            if (!captchaCode.get().getSecretCode().equals(registerRequest.getCaptchaSecret())) {
-                return null;
-            }
-        } else {
+        if (!captchaCodeService.checkCaptchaCode(registerRequest.getCaptcha(), registerRequest.getCaptchaSecret())) {
             throw new RegisterException(RegisterError.CAPTCHA);
         }
         String userName = registerRequest.getName();
@@ -77,7 +82,7 @@ public class UserService {
         }
         User user = new User();
         user.setEmail(registerRequest.getEmail());
-        user.setPassword(PasswordUtil.encodePassword(userPassword));
+        user.setPassword(passwordEncoder.encode(userPassword));
         user.setName(userName);
         user.setIsModerator((short) 0);
         user.setPhoto("");
@@ -100,16 +105,6 @@ public class UserService {
         } catch (Exception e) {
             loginResponse.setResult(false);
             loginResponse.setUser(null);
-        }
-        return loginResponse;
-    }
-
-    public LoginResponse checkUser(Principal principal) {
-        LoginResponse loginResponse = new LoginResponse();
-        if (principal != null) {
-            createLoginResponse(loginResponse, principal.getName());
-        } else {
-            loginResponse.setResult(false);
         }
         return loginResponse;
     }
@@ -144,7 +139,7 @@ public class UserService {
             user.setName(profileMyRequest.getName());
         }
         if (profileMyRequest.getPassword() != null) {
-            user.setPassword(PasswordUtil.encodePassword(profileMyRequest.getPassword()));
+            user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
         }
         if (profileMyRequest.getRemovePhoto() == 1) {
             user.setPhoto("");
@@ -195,18 +190,13 @@ public class UserService {
     public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
         PasswordChangeResponse passwordChangeResponse = new PasswordChangeResponse();
         String code = passwordChangeRequest.getCode();
-        Optional<CaptchaCode> captchaCode = captchaRepository.findByCode(passwordChangeRequest.getCaptcha());
-        if (captchaCode.isPresent()) {
-            if (!captchaCode.get().getSecretCode().equals(passwordChangeRequest.getCaptchaSecret())) {
-                return null;
-            }
-        } else {
+        if (!captchaCodeService.checkCaptchaCode(passwordChangeRequest.getCaptcha(), passwordChangeRequest.getCaptchaSecret())) {
             throw new PasswordChangeException(PasswordChangeError.CAPTCHA);
         }
-        if (passwordChangeRequest.getPassword().length() < 6) throw new PasswordChangeException(PasswordChangeError.PASSWORD);
+        if (passwordChangeRequest.getPassword().length() < Blog.PASSWORD_MIN_LENGTH) throw new PasswordChangeException(PasswordChangeError.PASSWORD);
         Optional<User> user = userRepository.findByCode(code);
         if (user.isEmpty()) throw new PasswordChangeException(PasswordChangeError.CODE);
-        user.get().setPassword(PasswordUtil.encodePassword(passwordChangeRequest.getPassword()));
+        user.get().setPassword(passwordEncoder.encode(passwordChangeRequest.getPassword()));
         user.get().setCode(null);
         userRepository.save(user.get());
         passwordChangeResponse.setResult(true);
