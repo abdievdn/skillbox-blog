@@ -49,8 +49,8 @@ public class ApiPostController {
     }
 
     @GetMapping("/{ID}")
-    public ResponseEntity<BlogResponse> postById(@PathVariable int ID) {
-        PostByIdResponse postByIdResponse = postService.getPostById(ID);
+    public ResponseEntity<BlogResponse> postById(@PathVariable int ID, Principal principal) {
+        PostByIdResponse postByIdResponse = postService.getPostById(ID, principal);
         return DefaultController.checkResponse(postByIdResponse);
     }
 

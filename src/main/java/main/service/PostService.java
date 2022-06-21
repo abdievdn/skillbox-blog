@@ -30,8 +30,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final TagRepository tagRepository;
     private final PostCommentService postCommentService;
     private final PostVoteService postVoteService;
     private final SettingsService settingsService;
@@ -137,10 +137,14 @@ public class PostService {
         return postsResponse;
     }
 
-    public PostByIdResponse getPostById(int id) {
+    public PostByIdResponse getPostById(int id, Principal principal) {
         PostByIdResponse postByIdResponse = new PostByIdResponse();
         Post post = postRepository.findById(id).orElseThrow();
-        post.setViewCount(post.getViewCount() + 1);
+        Optional<User> existedUser = userRepository.findByEmail(principal.getName());
+// view count not increase if author is viewer
+        if (existedUser.isEmpty() || !principal.getName().equals(post.getUser().getEmail())) {
+            post.setViewCount(post.getViewCount() + 1);
+        }
         postRepository.save(post);
         postByIdResponse.setId(id);
         postByIdResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
@@ -193,7 +197,6 @@ public class PostService {
         post.setIsActive(postAddEditRequest.getActive());
         post.setTitle(postAddEditRequest.getTitle());
         post.setText(postAddEditRequest.getText());
-        post.setViewCount(0);
         if (user.getIsModerator() == 0 && settingsService.getGlobalSettings().isPostPremoderation()) {
             post.setModerationStatus(ModerationStatus.NEW);
         } else {
@@ -206,7 +209,6 @@ public class PostService {
         if (postTimestamp > nowTimestamp) {
             addedTime = TimestampUtil.decode(postTimestamp);
         }
-//
         post.setTime(addedTime);
 // add tags, checks new or existing tag
         if (postAddEditRequest.getTags().length != 0) {
@@ -219,13 +221,11 @@ public class PostService {
                 } else {
                     Tag newTag = new Tag();
                     newTag.setName(requestTag);
-                    tagRepository.save(newTag);
                     tags.add(newTag);
                 }
             }
             post.setTags(tags);
         } else post.setTags(new HashSet<>());
-//
         postAddEditResponse.setResult(true);
         postRepository.save(post);
         return postAddEditResponse;
@@ -270,15 +270,14 @@ public class PostService {
                     if (!value.equals(post.getTime().toLocalDate().toString())) continue;
                     break;
                 case TAG:
-                    boolean noTag = true;
+                    boolean tagFound = false;
                     for (Tag tag : post.getTags()) {
                         if (value.equals(tag.getName())) {
-                            noTag = false;
+                            tagFound = true;
                             break;
                         }
                     }
-                    if (noTag) continue;
-                    break;
+                    if (!tagFound) continue;
                 default:
                     break;
             }
