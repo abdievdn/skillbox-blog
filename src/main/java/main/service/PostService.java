@@ -140,9 +140,15 @@ public class PostService {
     public PostByIdResponse getPostById(int id, Principal principal) {
         PostByIdResponse postByIdResponse = new PostByIdResponse();
         Post post = postRepository.findById(id).orElseThrow();
-        Optional<User> existedUser = userRepository.findByEmail(principal.getName());
-// view count not increase if author is viewer
-        if (existedUser.isEmpty() || !principal.getName().equals(post.getUser().getEmail())) {
+// view count not increase if author or moderator is viewer
+        if (principal != null) {
+            if (!principal.getName().equals(post.getUser().getEmail())) {
+                Optional<User> existUser = userRepository.findByEmail(principal.getName());
+                if (existUser.isPresent() && existUser.get().getIsModerator() != 1) {
+                    post.setViewCount(post.getViewCount() + 1);
+                }
+            }
+        } else {
             post.setViewCount(post.getViewCount() + 1);
         }
         postRepository.save(post);
@@ -172,19 +178,19 @@ public class PostService {
         return user;
     }
 
-    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID) throws PostAddEditException {
+    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws PostAddEditException {
         Post post = postRepository.findById(ID).orElseThrow();
         String author = post.getUser().getEmail();
-        return createUpdatePost(postAddEditRequest, author, post);
+        return createUpdatePost(postAddEditRequest, author, post, principal);
     }
 
     public PostAddEditResponse addPost(PostAddEditRequest postAddEditRequest, Principal principal)
             throws PostAddEditException {
         String author = principal.getName();
-        return createUpdatePost(postAddEditRequest, author, new Post());
+        return createUpdatePost(postAddEditRequest, author, new Post(), principal);
     }
 
-    private PostAddEditResponse createUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post) throws PostAddEditException {
+    private PostAddEditResponse createUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post, Principal principal) throws PostAddEditException {
         if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
             throw new PostAddEditException(PostAddEditError.TITLE);
         }
@@ -193,11 +199,12 @@ public class PostService {
         }
         PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
         User user = userRepository.findByEmail(author).orElseThrow();
+        User authorizedUser = userRepository.findByEmail(principal.getName()).orElseThrow();
         post.setUser(user);
         post.setIsActive(postAddEditRequest.getActive());
         post.setTitle(postAddEditRequest.getTitle());
         post.setText(postAddEditRequest.getText());
-        if (user.getIsModerator() == 0 && settingsService.getGlobalSettings().isPostPremoderation()) {
+        if (authorizedUser.getIsModerator() != 1 && user.getIsModerator() != 1 && settingsService.getGlobalSettings().isPostPremoderation()) {
             post.setModerationStatus(ModerationStatus.NEW);
         } else {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
@@ -244,7 +251,8 @@ public class PostService {
             case DECLINE:
                 post.setModerationStatus(ModerationStatus.DECLINED);
                 break;
-            default: break;
+            default:
+                break;
         }
         postRepository.save(post);
         postModerationResponse.setResult(true);

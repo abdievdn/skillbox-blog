@@ -79,8 +79,8 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     @PutMapping(value = "/{ID}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BlogResponse> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
-                                                        @PathVariable int ID) throws PostAddEditException {
-        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID);
+                                                        @PathVariable int ID, Principal principal) throws PostAddEditException {
+        PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID, principal);
         if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return DefaultController.checkResponse(postAddResponse);
     }
