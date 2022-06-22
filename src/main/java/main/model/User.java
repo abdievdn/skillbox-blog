@@ -18,7 +18,7 @@ public class User {
     @Column(nullable = false)
     private int id;
 
-    @Column(nullable = false, columnDefinition = "TINYINT", length = 1, name = "is_moderator")
+    @Column(nullable = false, columnDefinition = "TINYINT", name = "is_moderator")
     private short isModerator;
 
     @Column(nullable = false, name = "reg_time")
