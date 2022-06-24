@@ -2,11 +2,10 @@ package main.api.response.auth;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PasswordChangeErrorsResponse implements BlogResponse {
+public class PasswordChangeErrorsResponse {
     private String code;
     private String password;
     private String captcha;

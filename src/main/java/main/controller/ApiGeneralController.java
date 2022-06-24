@@ -5,7 +5,6 @@ import main.api.request.general.ProfileMyRequest;
 import main.api.request.general.PostCommentAddRequest;
 import main.api.request.general.PostModerationRequest;
 import main.api.request.general.SettingsRequest;
-import main.api.response.BlogResponse;
 import main.api.response.general.*;
 import main.api.response.general.PostCommentAddResponse;
 import main.api.response.general.PostModerationResponse;
@@ -42,12 +41,12 @@ public class ApiGeneralController {
     private final UserService userService;
 
     @GetMapping("/init")
-    public ResponseEntity<BlogResponse> init() {
+    public ResponseEntity<?> init() {
         return DefaultController.checkResponse(initService.getInitInfo());
     }
 
     @GetMapping("/settings")
-    public ResponseEntity<BlogResponse> settings() {
+    public ResponseEntity<?> settings() {
         SettingsResponse settingsResponse = settingsService.getGlobalSettings();
         return DefaultController.checkResponse(settingsResponse);
     }
@@ -61,20 +60,20 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/statistics/my")
-    public ResponseEntity<BlogResponse> statisticsMy(Principal principal) {
+    public ResponseEntity<?> statisticsMy(Principal principal) {
         StatisticsResponse statisticsResponse = statisticsService.getStatisticsMy(principal);
         return DefaultController.checkResponse(statisticsResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/statistics/all")
-    public ResponseEntity<BlogResponse> statisticsAll(Principal principal) {
+    public ResponseEntity<?> statisticsAll(Principal principal) {
         StatisticsResponse statisticsResponse = statisticsService.getStatisticsAll(principal);
         return DefaultController.checkResponse(statisticsResponse);
     }
 
     @GetMapping("/tag")
-    public ResponseEntity<BlogResponse> tag() {
+    public ResponseEntity<?> tag() {
         TagsResponse tagsResponse = tagService.getTags();
         return DefaultController.checkResponse(tagsResponse);
     }
@@ -91,20 +90,20 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping("/comment")
-    public ResponseEntity<BlogResponse> comment(@RequestBody PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
+    public ResponseEntity<?> comment(@RequestBody PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
         PostCommentAddResponse postCommentAddResponse = postCommentService.addComment(postCommentAddRequest, principal);
         return DefaultController.checkResponse(postCommentAddResponse);
     }
 
     @GetMapping("/calendar")
-    public ResponseEntity<BlogResponse> calendar() {
+    public ResponseEntity<?> calendar() {
         CalendarResponse calendarResponse = calendarService.getYears();
         return DefaultController.checkResponse(calendarResponse);
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
     @PostMapping(value = "/moderation")
-    public ResponseEntity<BlogResponse> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
+    public ResponseEntity<?> moderation(@RequestBody PostModerationRequest postModerationRequest, Principal principal) {
         PostModerationResponse postModerationResponse = postService.postModerate(postModerationRequest, principal);
         return DefaultController.checkResponse(postModerationResponse);
     }
@@ -112,7 +111,7 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping(path = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BlogResponse> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
+    public ResponseEntity<?> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
                                                        Principal principal) throws ProfileMyException, IOException {
         ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, null, principal);
         return DefaultController.checkResponse(profileMyResponse);
@@ -120,7 +119,7 @@ public class ApiGeneralController {
 
     @PreAuthorize("hasAuthority('user:write')")
     @PostMapping(path = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BlogResponse> profileMyPhoto(MultipartFile photo,
+    public ResponseEntity<?> profileMyPhoto(MultipartFile photo,
                                                             ProfileMyRequest profileMyRequest,
                                                             Principal principal)
             throws ProfileMyException, IOException, MaxUploadSizeExceededException {

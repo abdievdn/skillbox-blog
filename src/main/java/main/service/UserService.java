@@ -14,9 +14,6 @@ import main.controller.advice.exception.RegisterException;
 import main.model.User;
 import main.model.repository.UserRepository;
 import main.service.utils.ImageUtil;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailSender;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -40,18 +37,15 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final PostService postService;
     private final PasswordEncoder passwordEncoder;
-    private final MailSender mailSender;
+    private final MailSenderService mailSenderService;
 
-    @Value("${blog.info.email}")
-    private String emailFrom;
-
-    public UserService(UserRepository userRepository, CaptchaCodeService captchaCodeService, AuthenticationManager authenticationManager, PostService postService, PasswordEncoder passwordEncoder, MailSender mailSender) {
+    public UserService(UserRepository userRepository, CaptchaCodeService captchaCodeService, AuthenticationManager authenticationManager, PostService postService, PasswordEncoder passwordEncoder, MailSenderService mailSenderService) {
         this.userRepository = userRepository;
         this.captchaCodeService = captchaCodeService;
         this.authenticationManager = authenticationManager;
         this.postService = postService;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
+        this.mailSenderService = mailSenderService;
     }
 
     public LoginResponse checkUser(Principal principal) {
@@ -172,19 +166,10 @@ public class UserService {
         user.get().setCode(code);
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         String restoreUrl = baseUrl + Blog.EMAIL_URI_FOR_CHANGE_PASSWORD + code;
-        sendEmail(email, restoreUrl);
+        mailSenderService.sendEmail(email, restoreUrl);
         passwordRestoreResponse.setResult(true);
         userRepository.save(user.get());
         return passwordRestoreResponse;
-    }
-
-    private void sendEmail(String email, String text) {
-        SimpleMailMessage simpleMail = new SimpleMailMessage();
-        simpleMail.setFrom(emailFrom);
-        simpleMail.setTo(email);
-        simpleMail.setSubject(Blog.EMAIL_SUBJECT);
-        simpleMail.setText(text);
-        mailSender.send(simpleMail);
     }
 
     public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {

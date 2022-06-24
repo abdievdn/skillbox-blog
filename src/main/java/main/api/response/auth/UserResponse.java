@@ -3,12 +3,11 @@ package main.api.response.auth;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserResponse implements BlogResponse {
+public class UserResponse {
     private Integer id;
     private String name;
     private String photo;

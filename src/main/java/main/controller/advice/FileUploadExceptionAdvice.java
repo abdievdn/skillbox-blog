@@ -1,6 +1,5 @@
 package main.controller.advice;
 
-import main.api.response.BlogResponse;
 import main.api.response.general.ImageErrorsResponse;
 import main.api.response.general.ImageResponse;
 import main.controller.advice.error.ImageUploadError;
@@ -13,7 +12,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 public class FileUploadExceptionAdvice {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<BlogResponse> handleMaxSizeException() {
+    public ResponseEntity<?> handleMaxSizeException() {
         ImageResponse imageResponse = new ImageResponse();
         ImageErrorsResponse imageErrorsResponse = new ImageErrorsResponse();
         imageErrorsResponse.setImage(ImageUploadError.IMAGE.getError());
