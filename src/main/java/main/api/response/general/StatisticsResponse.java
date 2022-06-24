@@ -1,10 +1,9 @@
 package main.api.response.general;
 
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 @Data
-public class StatisticsResponse implements BlogResponse {
+public class StatisticsResponse {
     private int postsCount;
     private int likesCount;
     private int dislikesCount;

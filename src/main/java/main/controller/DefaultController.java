@@ -1,6 +1,5 @@
 package main.controller;
 
-import main.api.response.BlogResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +26,10 @@ public class DefaultController {
         return "forward:/";
     }
 
-    public static ResponseEntity<BlogResponse> checkResponse(BlogResponse blogResponse) {
-        if (blogResponse == null) {
+    public static ResponseEntity<?> checkResponse(Object response) {
+        if (response == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(blogResponse);
+        return ResponseEntity.ok(response);
     }
 }

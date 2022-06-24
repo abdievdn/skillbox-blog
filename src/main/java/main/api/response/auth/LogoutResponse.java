@@ -1,9 +1,8 @@
 package main.api.response.auth;
 
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 @Data
-public class LogoutResponse implements BlogResponse {
+public class LogoutResponse {
     private boolean result;
 }

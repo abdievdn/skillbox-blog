@@ -1,10 +1,9 @@
 package main.api.response.general;
 
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 @Data
-public class InitResponse implements BlogResponse {
+public class InitResponse {
     private String title;
     private String subtitle;
     private String phone;

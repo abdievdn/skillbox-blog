@@ -1,9 +1,8 @@
 package main.api.response.post;
 
 import lombok.Data;
-import main.api.response.BlogResponse;
 
 @Data
-public class PostVoteResponse implements BlogResponse {
+public class PostVoteResponse {
     private boolean result;
 }

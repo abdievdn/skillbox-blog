@@ -1,11 +1,10 @@
 package main.api.response.post;
 
 import lombok.Data;
-import main.api.response.BlogResponse;
 import main.api.response.auth.UserResponse;
 
 @Data
-public class PostCommentResponse implements BlogResponse {
+public class PostCommentResponse {
     private int id;
     private long timestamp;
     private String text;
