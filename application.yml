@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/blog
-    username: root
-    password: skillbox
+    url: jdbc:mysql://db4free.net:3306/abdievblogjava
+    username: abdiev_dn
+    password: skillbox22
   jpa:
     hibernate:
       ddl-auto: update
