@@ -72,7 +72,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.GitHub.cage</groupId>
+            <groupId>com.github.cage</groupId>
             <artifactId>cage</artifactId>
             <version>1.0</version>
         </dependency>

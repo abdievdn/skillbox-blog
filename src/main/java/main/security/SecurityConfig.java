@@ -38,8 +38,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .logout()
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
-                .clearAuthentication(true)
-                .and().httpBasic();
+                .clearAuthentication(true);
     }
 
     @Bean
