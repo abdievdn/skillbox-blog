@@ -5,9 +5,9 @@
 |||
 | ------ | ------ |
 | Версия JDK | 11 |
-| Версия Spring Boot | [plugins/github/README.md][PlGh] |
-| База данных | [plugins/googledrive/README.md][PlGd] |
-| Сборщик проекта | [plugins/onedrive/README.md][PlOd] |
+| Версия Spring Boot | 2.6.4 |
+| База данных | MySQL 8+ |
+| Сборщик проекта | maven |
 
 ##### Установка и запуск проекта:
 1. Клонировать проекта на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
