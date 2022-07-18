@@ -13,30 +13,30 @@
 1. Клонировать проекта на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
 2. Прописать ссылку на бд в файле application.yml вместо существующей, установить логин и пароль для входа в бд; 
 spring: 
-  datasource:  
-    url: _jdbc:mysql://rc1b-33d4tkgdgxxtd3gs.mdb.yandexcloud.net/blog_  
-    username: _abdiev_  
-    password: _skillbox_  
-3. Ввести данные для подключения к мэйл сервису по протоколу smpt;
+&ensp; datasource:  
+&emsp; url: _jdbc:mysql://rc1b-33d4tkgdgxxtd3gs.mdb.yandexcloud.net/blog_  
+&emsp; username: _abdiev_  
+&emsp; password: _skillbox_  
+3. Ввести данные для подключения к мэйл сервису по протоколу smpt;  
 spring:  
-  mail:  
-    host: _smtp.yandex.ru_  
-    port: _465_  
-    username: _adzmit_  
-    password: _uhsdpwviyxeuhaug_  
-ввести адрес электронной почты, с которой будет приходить ссылка восстановления пароля;
+&ensp; mail:  
+&emsp; host: _smtp.yandex.ru_  
+&emsp; port: _465_  
+&emsp; username: _adzmit_  
+&emsp; password: _uhsdpwviyxeuhaug_  
+ввести адрес электронной почты, с которой будет приходить ссылка восстановления пароля;  
 blog:  
-  info:  
-    email:
+&ensp; info:  
+&emsp; email:
 4. Поменять при необходимости данные в ветке blog файла application.yml;
 blog:  
-  info:  
-    title: _DevPub_  
-    subtitle: _Рассказы разработчиков_  
-    phone: _+375 29 708****_  
-    email: _adzmit@yandex.ru_  
-    copyright: _Дмитрий Абдиев_  
-    copyrightFrom: _2022_  
+&ensp; info:  
+&emsp; title: _DevPub_  
+&emsp; subtitle: _Рассказы разработчиков_  
+&emsp; phone: _+375 29 708****_  
+&emsp; email: _adzmit@yandex.ru_  
+&emsp; copyright: _Дмитрий Абдиев_  
+&emsp; copyrightFrom: _2022_  
 5. Произвести сборку проекта: mvn install (вводить в папке проекта)
 6. Запустить проект: mvn spring-boot:start (вводить в папке проекта)
 
