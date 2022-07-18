@@ -24,6 +24,10 @@ spring:
     port: _465_  
     username: _adzmit_  
     password: _uhsdpwviyxeuhaug_  
+ввести адрес электронной почты, с которой будет приходить ссылка восстановления пароля;
+blog:  
+  info:  
+    email:
 4. Поменять при необходимости данные в ветке blog файла application.yml;
 blog:  
   info:  
