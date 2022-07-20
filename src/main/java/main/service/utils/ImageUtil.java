@@ -1,5 +1,6 @@
 package main.service.utils;
 
+import main.Blog;
 import main.controller.DefaultController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,9 +19,15 @@ public class ImageUtil {
                 throw new IOException();
             }
         BufferedImage photoInput = ImageIO.read(file.getInputStream());
+        // if width and height is zero then check image size, if it is larger than max column width then do resize
         if (width == 0 || height == 0) {
-            width = photoInput.getWidth();
-            height = photoInput.getHeight();
+            if (photoInput.getWidth() > Blog.IMAGE_MAX_WIDTH) {
+                width = Blog.IMAGE_MAX_WIDTH;
+                height = photoInput.getHeight() * (Blog.IMAGE_MAX_WIDTH * 100 / photoInput.getWidth()) / 100;
+            } else {
+                width = photoInput.getWidth();
+                height = photoInput.getHeight();
+            }
         }
         BufferedImage photoOutput = new BufferedImage(width, height, photoInput.getType());
         Graphics2D image = photoOutput.createGraphics();

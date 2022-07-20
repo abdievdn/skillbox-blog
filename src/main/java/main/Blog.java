@@ -16,6 +16,7 @@ public class Blog {
     public static final int PHOTO_LIMIT_WEIGHT = 5242880;
     public static final int PHOTO_WIDTH = 90;
     public static final int PHOTO_HEIGHT = 90;
+    public static final int IMAGE_MAX_WIDTH = 970;
     public static final int CAPTCHA_TIME_EXPIRED_MIN = 60;
     public static final int POST_MIN_TITLE_LENGTH = 1;
     public static final int POST_MIN_TEXT_LENGTH = 50;

@@ -10,7 +10,6 @@ import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -48,12 +47,7 @@ public class ApiAuthController {
         return DefaultController.checkResponse(loginResponse);
     }
 
-    @PreAuthorize("hasAuthority('user:write')")
-    @GetMapping("/logout")
-    public ResponseEntity<?> logout() {
-        LogoutResponse logoutResponse = userService.userLogout();
-        return DefaultController.checkResponse(logoutResponse);
-    }
+    // logout configured with CustomLogoutSuccessHandler in SecurityConfig
 
     @PostMapping("/restore")
     public ResponseEntity<?> passwordRestore(@RequestBody PasswordRestoreRequest passwordRestoreRequest) {
