@@ -65,11 +65,13 @@ public class ApiGeneralController {
         return DefaultController.checkResponse(statisticsResponse);
     }
 
-    @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/statistics/all")
     public ResponseEntity<?> statisticsAll(Principal principal) {
         StatisticsResponse statisticsResponse = statisticsService.getStatisticsAll(principal);
-        return DefaultController.checkResponse(statisticsResponse);
+        if (statisticsResponse == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        return ResponseEntity.ok(statisticsResponse);
     }
 
     @GetMapping("/tag")
@@ -114,7 +116,7 @@ public class ApiGeneralController {
     public ResponseEntity<?> profileMy(@RequestBody ProfileMyRequest profileMyRequest,
                                                        Principal principal) throws ProfileMyException, IOException {
         ProfileMyResponse profileMyResponse = userService.userProfileChange(profileMyRequest, null, principal);
-        return DefaultController.checkResponse(profileMyResponse);
+        return ResponseEntity.ok(profileMyResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")

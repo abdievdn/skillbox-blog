@@ -9,7 +9,6 @@ import main.model.Post;
 import main.model.User;
 import main.model.repository.PostRepository;
 import main.model.repository.SettingsRepository;
-import main.model.repository.UserRepository;
 import main.service.enums.SettingsCode;
 import main.service.utils.TimestampUtil;
 import org.springframework.stereotype.Service;
@@ -21,12 +20,12 @@ import java.security.Principal;
 public class StatisticsService {
 
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
     private final SettingsRepository settingsRepository;
+    private final UserService userService;
     private final PostVoteService postVoteService;
 
     public StatisticsResponse getStatisticsMy(Principal principal) {
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User user = userService.findUser(principal.getName());
         StatisticsResponse statisticsResponse = new StatisticsResponse();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
@@ -37,9 +36,15 @@ public class StatisticsService {
     }
 
     public StatisticsResponse getStatisticsAll(Principal principal) {
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        GlobalSettings settings = settingsRepository.findByCode(SettingsCode.STATISTICS_IS_PUBLIC.name()).orElseThrow();
-        if (settings.getValue().equals(Blog.NO_VALUE) && user.getIsModerator() != 1) return null;
+        GlobalSettings statisticsIsPublic = settingsRepository.findByCode(SettingsCode.STATISTICS_IS_PUBLIC.name()).orElseThrow();
+        if (statisticsIsPublic.getValue().equals(Blog.NO_VALUE)) {
+            if (principal != null) {
+                User user = userService.findUser(principal.getName());
+                if (user.getIsModerator() != 1) return null;
+            } else {
+                return null;
+            }
+        }
         StatisticsResponse statisticsResponse = new StatisticsResponse();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {

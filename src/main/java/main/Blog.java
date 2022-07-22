@@ -1,6 +1,7 @@
 package main;
 
 public class Blog {
+
     public static final String ERROR_MESSAGE_OUTDATED_LINK = "\"Ссылка для восстановления пароля устарела. <a href=\\\"../restore-password\\\">Запросить ссылку снова</a>\"";
     public static final String ERROR_MESSAGE_PASSWORD_LENGTH = "Пароль короче 6-ти символов";
     public static final String ERROR_MESSAGE_CAPTCHA_CODE = "Код с картинки введён неверно";
@@ -35,5 +36,6 @@ public class Blog {
     public static final String EMAIL_URI_FOR_CHANGE_PASSWORD = "/login/change-password/";
     public static final String EMAIL_SUBJECT = "Восстановление пароля";
 
-    public static final String REGEX_FOR_USER_NAME = "[\\w\\s\\S]+";
+    public static final String REGEX_FOR_USER_NAME = "[\\w\\s]+";
+
 }

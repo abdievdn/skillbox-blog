@@ -13,7 +13,6 @@ import main.model.PostComment;
 import main.model.User;
 import main.model.repository.PostCommentRepository;
 import main.model.repository.PostRepository;
-import main.model.repository.UserRepository;
 import main.service.utils.TimestampUtil;
 import org.springframework.stereotype.Service;
 
@@ -27,8 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class PostCommentService {
 
     private final PostCommentRepository postCommentRepository;
-    private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final UserService userService;
 
     public List<PostCommentResponse> getComments(int postId) {
         List<PostCommentResponse> commentsToPost = new CopyOnWriteArrayList<>();
@@ -60,7 +59,7 @@ public class PostCommentService {
     }
 
     public PostCommentAddResponse addComment(PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User user = userService.findUser(principal.getName());
         Post post = postRepository.findById(postCommentAddRequest.getPostId()).orElseThrow();
         if (postCommentAddRequest.getText().length() < Blog.COMMENT_TEXT_LENGTH) throw new PostCommentAddException(PostCommentAddError.TEXT);
         PostComment postComment = new PostComment();

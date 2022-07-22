@@ -8,7 +8,6 @@ import main.model.PostVote;
 import main.model.User;
 import main.model.repository.PostRepository;
 import main.model.repository.PostVoteRepository;
-import main.model.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
@@ -21,10 +20,10 @@ public class PostVoteService {
 
     private final PostVoteRepository postVoteRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     public PostVoteResponse addPostVote(PostVoteRequest postVoteRequest, short value, Principal principal) {
-        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User user = userService.findUser(principal.getName());
         Post post = postRepository.findById(postVoteRequest.getPostId()).orElseThrow();
         PostVoteResponse postVoteResponse = new PostVoteResponse();
         PostVote postVote;

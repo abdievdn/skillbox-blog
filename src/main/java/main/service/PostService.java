@@ -30,8 +30,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
     private final TagRepository tagRepository;
+    private final UserService userService;
     private final PostCommentService postCommentService;
     private final PostVoteService postVoteService;
     private final SettingsService settingsService;
@@ -71,11 +71,11 @@ public class PostService {
     public PostsResponse getPostsMy(PostRequest postRequest, Principal principal) {
         int count = 0;
         PostsResponse postsResponse = new PostsResponse();
-        String authorizedUser = principal.getName();
+        User authorizedUser = userService.findUser(principal.getName());
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (!post.getUser().getEmail().equals(authorizedUser)) continue;
+            if (!post.getUser().getEmail().equals(authorizedUser.getEmail())) continue;
             switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
                 case INACTIVE:
                     if (post.getIsActive() == 1) continue;
@@ -107,23 +107,19 @@ public class PostService {
     public PostsResponse getPostsModeration(PostRequest postRequest, Principal principal) {
         int count = 0;
         PostsResponse postsResponse = new PostsResponse();
-        String authorizedUser = principal.getName();
+        User authorizedUser = userService.findUser(principal.getName());
         List<PostResponse> posts = new CopyOnWriteArrayList<>();
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
-            if (post.getModerator() != null && !post.getModerator().getEmail().equals(authorizedUser)) continue;
             switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
                 case NEW:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
+                    if (isNotMyModeratePost(null, post, ModerationStatus.NEW)) continue;
                     break;
                 case ACCEPTED:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
+                    if (isNotMyModeratePost(authorizedUser, post, ModerationStatus.ACCEPTED)) continue;
                     break;
                 case DECLINED:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
+                    if (isNotMyModeratePost(authorizedUser, post, ModerationStatus.DECLINED)) continue;
                     break;
                 default:
                     break;
@@ -137,19 +133,26 @@ public class PostService {
         return postsResponse;
     }
 
+    private boolean isNotMyModeratePost(User authorizedUser, Post post, ModerationStatus status) {
+        if (post.getIsActive() != 1) return true;
+        if (!post.getModerationStatus().equals(status)) return true;
+        if (authorizedUser != null) return !authorizedUser.equals(post.getModerator());
+        return false;
+    }
+
     public PostByIdResponse getPostById(int id, Principal principal) {
         PostByIdResponse postByIdResponse = new PostByIdResponse();
         Post post = postRepository.findById(id).orElseThrow();
-// view count not increase if author or moderator is viewer
+        // view count not increases if author or moderator is viewer
         if (principal != null) {
-            if (!principal.getName().equals(post.getUser().getEmail())) {
-                Optional<User> existUser = userRepository.findByEmail(principal.getName());
-                if (existUser.isPresent() && existUser.get().getIsModerator() != 1) {
+            User user = userService.findUser(principal.getName());
+            if (!user.getEmail().equals(post.getUser().getEmail())) {
+                if (user.getIsModerator() != 1) {
                     post.setViewCount(post.getViewCount() + 1);
                 }
             }
         } else {
-            post.setViewCount(post.getViewCount() + 1);
+            post.setViewCount(post.getViewCount() + 1); // view increases if unregistered user
         }
         postRepository.save(post);
         postByIdResponse.setId(id);
@@ -180,7 +183,7 @@ public class PostService {
 
     public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws PostAddEditException {
         Post post = postRepository.findById(ID).orElseThrow();
-        String author = post.getUser().getEmail();
+        String author = String.valueOf(post.getUser().getId());
         return createUpdatePost(postAddEditRequest, author, post, principal);
     }
 
@@ -198,8 +201,8 @@ public class PostService {
             throw new PostAddEditException(PostAddEditError.TEXT);
         }
         PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
-        User user = userRepository.findByEmail(author).orElseThrow();
-        User authorizedUser = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User user = userService.findUser(author);
+        User authorizedUser = userService.findUser(principal.getName());
         post.setUser(user);
         post.setIsActive(postAddEditRequest.getActive());
         post.setTitle(postAddEditRequest.getTitle());
@@ -209,7 +212,7 @@ public class PostService {
         } else {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         }
-// compare timestamp
+        // compare timestamp
         LocalDateTime addedTime = LocalDateTime.now();
         long nowTimestamp = TimestampUtil.encode(addedTime);
         long postTimestamp = postAddEditRequest.getTimestamp();
@@ -217,7 +220,7 @@ public class PostService {
             addedTime = TimestampUtil.decode(postTimestamp);
         }
         post.setTime(addedTime);
-// add tags, checks new or existing tag
+        // add tags, checks new or existing tag
         if (postAddEditRequest.getTags().length != 0) {
             Set<Tag> tags = new HashSet<>();
             String[] requestTags = postAddEditRequest.getTags();
@@ -239,8 +242,7 @@ public class PostService {
     }
 
     public PostModerationResponse postModerate(PostModerationRequest postModerationRequest, Principal principal) {
-        String authorizedUser = principal.getName();
-        User user = userRepository.findByEmail(authorizedUser).orElseThrow();
+        User user = userService.findUser(principal.getName());
         if (user.getIsModerator() != 1) return null;
         PostModerationResponse postModerationResponse = new PostModerationResponse();
         Post post = postRepository.findById(postModerationRequest.getPostId()).orElseThrow();
@@ -254,6 +256,7 @@ public class PostService {
             default:
                 break;
         }
+        post.setModerator(user);
         postRepository.save(post);
         postModerationResponse.setResult(true);
         return postModerationResponse;
@@ -313,17 +316,6 @@ public class PostService {
 
     public static boolean isNotActual(Post post) {
         return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() != 1;
-    }
-
-    public int getNewPostsCount() {
-        int postsCount = 0;
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (post.getModerationStatus().equals(ModerationStatus.NEW) && post.getIsActive() == 1) {
-                postsCount++;
-            }
-        }
-        return postsCount;
     }
 
     private String announce(String text) {

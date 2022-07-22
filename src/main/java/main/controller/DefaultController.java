@@ -10,12 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class DefaultController {
 
     private static String DEFAULT_PATH;
-
     @Value("${blog.path}")
     public void setDefaultPath(String defaultPath) {
         DefaultController.DEFAULT_PATH = defaultPath;
     }
-
     public static String getDefaultPath() {
         return DEFAULT_PATH;
     }
