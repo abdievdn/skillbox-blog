@@ -12,7 +12,7 @@
 #### Установка и запуск проекта:
 1. Клонировать проект на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
 2. Прописать ссылку на бд в файле application.yml вместо существующей, установить логин и пароль для входа в бд;  
-spring: 
+spring:  
 &ensp; datasource:  
 &emsp; url: _jdbc:mysql://rc1b-33d4tkgdgxxtd3gs.mdb.yandexcloud.net/blog_  
 &emsp; username: _abdiev_  
