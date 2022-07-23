@@ -10,7 +10,7 @@
 | Сборщик проекта | maven |
 
 #### Установка и запуск проекта:
-1. Клонировать проекта на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
+1. Клонировать проект на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
 2. Прописать ссылку на бд в файле application.yml вместо существующей, установить логин и пароль для входа в бд; 
 spring: 
 &ensp; datasource:  
