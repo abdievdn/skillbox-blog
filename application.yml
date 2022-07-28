@@ -1,7 +1,7 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/blog
-    username: root
+    url: jdbc:mysql://rc1b-33d4tkgdgxxtd3gs.mdb.yandexcloud.net/blog
+    username: abdiev
     password: skillbox
   jpa:
     hibernate:

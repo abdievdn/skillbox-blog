@@ -10,9 +10,9 @@
 | Сборщик проекта | maven |
 
 #### Установка и запуск проекта:
-1. Клонировать проекта на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
-2. Прописать ссылку на бд в файле application.yml вместо существующей, установить логин и пароль для входа в бд; 
-spring: 
+1. Клонировать проект на локальный диск: git clone https://github.com/abdievdn/skillbox-blog.git
+2. Прописать ссылку на бд в файле application.yml вместо существующей, установить логин и пароль для входа в бд;  
+spring:  
 &ensp; datasource:  
 &emsp; url: _jdbc:mysql://rc1b-33d4tkgdgxxtd3gs.mdb.yandexcloud.net/blog_  
 &emsp; username: _abdiev_  
@@ -44,6 +44,7 @@ blog:
 
 #### Папка demo
 В папке находится дамп базы данных Dump20220628.sql, который можно импортировать в свою бд, для демонстрации. Папку blogfiles скопировать в корень локального диска (содержит файлы изображений).
+Пароль "123123" для admin@admin.com, boomer@mail.box, user_one@skill.ru, user_two@skill.ru.
 
 #### Ссылка для презентации проекта
 http://51.250.17.207:8080 (доступно ограниченное время, Yandex Cloud)

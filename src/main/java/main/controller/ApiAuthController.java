@@ -8,7 +8,6 @@ import main.controller.advice.exception.PasswordChangeException;
 import main.controller.advice.exception.RegisterException;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
-import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +35,7 @@ public class ApiAuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest)
-            throws RegisterException, FileSizeLimitExceededException {
+            throws RegisterException {
         RegisterResponse registerResponse = userService.userRegister(registerRequest);
         return DefaultController.checkResponse(registerResponse);
     }
