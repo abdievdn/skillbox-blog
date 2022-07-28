@@ -61,18 +61,20 @@ public class PostCommentService {
     public PostCommentAddResponse addComment(PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
         User user = userService.findUser(principal.getName());
         Post post = postRepository.findById(postCommentAddRequest.getPostId()).orElseThrow();
-        if (postCommentAddRequest.getText().length() < Blog.COMMENT_TEXT_LENGTH) throw new PostCommentAddException(PostCommentAddError.TEXT);
+        if (postCommentAddRequest.getText().length() < Blog.COMMENT_TEXT_LENGTH) {
+            throw new PostCommentAddException(PostCommentAddError.TEXT);
+        }
         PostComment postComment = new PostComment();
         if (postCommentAddRequest.getParentId() != null) {
             PostComment parentPost = postCommentRepository.findById(postCommentAddRequest.getParentId()).orElseThrow();
             postComment.setParent(parentPost);
         }
-        PostCommentAddResponse postCommentAddResponse = new PostCommentAddResponse();
         postComment.setPost(post);
         postComment.setText(postCommentAddRequest.getText());
         postComment.setUser(user);
         postComment.setTime(LocalDateTime.now());
         postCommentRepository.save(postComment);
+        PostCommentAddResponse postCommentAddResponse = new PostCommentAddResponse();
         postCommentAddResponse.setId(postComment.getId());
         return postCommentAddResponse;
     }

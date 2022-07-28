@@ -2,12 +2,10 @@ package main.controller;
 
 import lombok.AllArgsConstructor;
 import main.api.request.post.*;
-import main.api.request.post.enums.PostRequestKey;
 import main.api.response.post.*;
 import main.controller.advice.exception.PostAddEditException;
 import main.service.PostService;
 import main.service.PostVoteService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,32 +23,32 @@ public class ApiPostController {
 
     @GetMapping
     public ResponseEntity<?> post(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getActualPosts(postRequest, PostRequestKey.ALL);
+        PostsResponse postsResponse = postService.getPosts(postRequest);
         return DefaultController.checkResponse(postsResponse);
     }
 
     @GetMapping("/search")
     public ResponseEntity<?> postSearch(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.searchPosts(postRequest, PostRequestKey.SEARCH);
+        PostsResponse postsResponse = postService.getPosts(postRequest);
         return DefaultController.checkResponse(postsResponse);
     }
 
     @GetMapping("/byDate")
     public ResponseEntity<?> postByDate(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsByDate(postRequest, PostRequestKey.DATE);
+        PostsResponse postsResponse = postService.getPosts(postRequest);
         return DefaultController.checkResponse(postsResponse);
     }
 
     @GetMapping("/byTag")
     public ResponseEntity<?> postByTag(PostRequest postRequest) {
-        PostsResponse postsResponse = postService.getPostsByTag(postRequest, PostRequestKey.TAG);
+        PostsResponse postsResponse = postService.getPosts(postRequest);
         return DefaultController.checkResponse(postsResponse);
     }
 
     @GetMapping("/{ID}")
     public ResponseEntity<?> postById(@PathVariable int ID, Principal principal) {
-        PostByIdResponse postByIdResponse = postService.getPostById(ID, principal);
-        return DefaultController.checkResponse(postByIdResponse);
+        PostResponse postResponse = postService.getPostById(ID, principal);
+        return DefaultController.checkResponse(postResponse);
     }
 
     @PreAuthorize("hasAuthority('user:write')")
@@ -80,7 +78,6 @@ public class ApiPostController {
     public ResponseEntity<?> postEdit(@RequestBody PostAddEditRequest postAddEditRequest,
                                                         @PathVariable int ID, Principal principal) throws PostAddEditException {
         PostAddEditResponse postAddResponse = postService.editPost(postAddEditRequest, ID, principal);
-        if (postAddResponse == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         return DefaultController.checkResponse(postAddResponse);
     }
 

@@ -27,5 +27,5 @@ public class PostVote {
     private LocalDateTime time;
 
     @Column(nullable = false, columnDefinition = "TINYINT")
-    private Short value; // -1, 0, 1
+    private short value; // -1, 0, 1
 }

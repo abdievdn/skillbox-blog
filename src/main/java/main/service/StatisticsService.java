@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import main.Blog;
 import main.api.response.general.StatisticsResponse;
 import main.model.GlobalSettings;
-import main.model.ModerationStatus;
 import main.model.Post;
 import main.model.User;
 import main.model.repository.PostRepository;
@@ -22,6 +21,7 @@ public class StatisticsService {
     private final PostRepository postRepository;
     private final SettingsRepository settingsRepository;
     private final UserService userService;
+    private final PostService postService;
     private final PostVoteService postVoteService;
 
     public StatisticsResponse getStatisticsMy(Principal principal) {
@@ -30,7 +30,7 @@ public class StatisticsService {
         Iterable<Post> postIterable = postRepository.findAll();
         for (Post post : postIterable) {
             if (post.getUser().getId() != user.getId()) continue;
-            statisticsExtraction(statisticsResponse, post);
+            createStatisticsResponse(statisticsResponse, post);
         }
         return statisticsResponse;
     }
@@ -46,15 +46,14 @@ public class StatisticsService {
             }
         }
         StatisticsResponse statisticsResponse = new StatisticsResponse();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            statisticsExtraction(statisticsResponse, post);
+        for (Post post : postService.findAllPosts()) {
+            createStatisticsResponse(statisticsResponse, post);
         }
         return statisticsResponse;
     }
 
-    private void statisticsExtraction(StatisticsResponse statisticsResponse, Post post) {
-        if (post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) {
+    private void createStatisticsResponse(StatisticsResponse statisticsResponse, Post post) {
+        if (postService.isActualPost(post)) {
             statisticsResponse.setPostsCount(statisticsResponse.getPostsCount() + 1);
             statisticsResponse.setLikesCount(postVoteService.getPostVoteCount(post.getId(), (short) 1) + statisticsResponse.getLikesCount());
             statisticsResponse.setDislikesCount(postVoteService.getPostVoteCount(post.getId(), (short) -1) + statisticsResponse.getDislikesCount());

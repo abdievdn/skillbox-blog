@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -25,14 +24,14 @@ public class PostVoteService {
     public PostVoteResponse addPostVote(PostVoteRequest postVoteRequest, short value, Principal principal) {
         User user = userService.findUser(principal.getName());
         Post post = postRepository.findById(postVoteRequest.getPostId()).orElseThrow();
-        PostVoteResponse postVoteResponse = new PostVoteResponse();
-        PostVote postVote;
-        Optional<PostVote> postVoteIsPresent = postVoteRepository.findByUserAndPost(user, post);
-        postVote = postVoteIsPresent.orElseGet(PostVote::new);
-        postVote.setUser(user);
-        postVote.setPost(post);
+        PostVote postVote = postVoteRepository.findByUserAndPost(user, post).orElseGet(PostVote::new);
+        if (postVote.getUser() == null || postVote.getPost() == null) {
+            postVote.setUser(user);
+            postVote.setPost(post);
+        }
         postVote.setTime(LocalDateTime.now());
-        if (postVote.getValue() == null || postVote.getValue() != value) {
+        PostVoteResponse postVoteResponse = new PostVoteResponse();
+        if (postVote.getValue() == 0 || postVote.getValue() != value) {
             postVote.setValue(value);
             postVoteResponse.setResult(true);
         } else if (postVote.getValue() == value) {

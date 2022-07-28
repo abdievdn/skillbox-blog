@@ -56,18 +56,18 @@ public class UserService {
 
     public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
         RegisterResponse registerResponse = new RegisterResponse();
-        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
+        if (isEmailPresent(registerRequest.getEmail())) {
             throw new RegisterException(RegisterError.EMAIL);
         }
         if (!captchaCodeService.checkCaptchaCode(registerRequest.getCaptcha(), registerRequest.getCaptchaSecret())) {
             throw new RegisterException(RegisterError.CAPTCHA);
         }
         String userName = registerRequest.getName();
-        if (userName.isEmpty() || !userName.matches(Blog.REGEX_FOR_USER_NAME)) {
+        if (isUserNameIncorrect(userName)) {
             throw new RegisterException(RegisterError.NAME);
         }
         String userPassword = registerRequest.getPassword();
-        if (userPassword.length() < 6) {
+        if (isPasswordIncorrect(userPassword)) {
             throw new RegisterException(RegisterError.PASSWORD);
         }
         User user = new User();
@@ -100,39 +100,32 @@ public class UserService {
 
     public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo, Principal principal)
             throws ProfileMyException, IOException {
-        User user = userRepository.findById(Integer.parseInt(principal.getName())).orElseThrow();
-        ProfileMyResponse profileMyResponse = new ProfileMyResponse();
-        if (!profileMyRequest.getEmail().equals(user.getEmail())) {
-            if (userRepository.findByEmail(profileMyRequest.getEmail()).isPresent()) {
-                throw new ProfileMyException(ProfileMyError.EMAIL);
-            } else {
-                user.setEmail(profileMyRequest.getEmail());
-            }
+        User user = findUser(principal.getName());
+        if (!profileMyRequest.getEmail().equals(user.getEmail()) && isEmailPresent(profileMyRequest.getEmail())) {
+            throw new ProfileMyException(ProfileMyError.EMAIL);
+        } else {
+            user.setEmail(profileMyRequest.getEmail());
         }
-        if (profileMyRequest.getName() == null || !profileMyRequest.getName().matches(Blog.REGEX_FOR_USER_NAME)) {
+        if (isUserNameIncorrect(profileMyRequest.getName())) {
             throw new ProfileMyException(ProfileMyError.NAME);
-        } else if (!profileMyRequest.getName().equals(user.getName())) {
+        } else {
             user.setName(profileMyRequest.getName());
         }
-        if (profileMyRequest.getPassword() != null && profileMyRequest.getPassword().length() < Blog.PASSWORD_MIN_LENGTH) {
+        if (isPasswordIncorrect(profileMyRequest.getPassword())) {
             throw new ProfileMyException(ProfileMyError.PASSWORD);
-        } else if (profileMyRequest.getPassword() != null) {
+        } else {
             user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
         }
         if (profileMyRequest.getRemovePhoto() == 1) {
             user.setPhoto("");
         }
+        ProfileMyResponse profileMyResponse = new ProfileMyResponse();
         profileMyResponse.setResult(true);
-
         if (photo != null) {
             if (photo.getBytes().length > Blog.PHOTO_LIMIT_WEIGHT) {
                 throw new ProfileMyException(ProfileMyError.PHOTO);
             }
-            String path = Blog.PATH_FOR_AVATARS;
-            String fileName = principal.getName();
-            String formatName = ImageUtil.getFormatName(photo);
-            ImageUtil.saveImage(path, fileName, formatName, photo, Blog.PHOTO_WIDTH, Blog.PHOTO_HEIGHT);
-            user.setPhoto(path + fileName + '.' + formatName);
+            user.setPhoto(savePhoto(photo, principal));
         }
         userRepository.save(user);
         return profileMyResponse;
@@ -146,31 +139,49 @@ public class UserService {
             passwordRestoreResponse.setResult(false);
             return passwordRestoreResponse;
         }
-        String code = String.valueOf(UUID.randomUUID()).replace("-", "");
+        String code = createRestoreCode();
         user.get().setCode(code);
-        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
-        String restoreUrl = baseUrl + Blog.EMAIL_URI_FOR_CHANGE_PASSWORD + code;
-        mailSenderService.sendEmail(email, restoreUrl);
-        passwordRestoreResponse.setResult(true);
         userRepository.save(user.get());
+        mailSenderService.sendEmail(email, createRestoreUrl(code));
+        passwordRestoreResponse.setResult(true);
         return passwordRestoreResponse;
     }
 
     public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
-        PasswordChangeResponse passwordChangeResponse = new PasswordChangeResponse();
-        String code = passwordChangeRequest.getCode();
         if (!captchaCodeService.checkCaptchaCode(passwordChangeRequest.getCaptcha(), passwordChangeRequest.getCaptchaSecret())) {
             throw new PasswordChangeException(PasswordChangeError.CAPTCHA);
         }
-        if (passwordChangeRequest.getPassword().length() < Blog.PASSWORD_MIN_LENGTH)
+        if (isPasswordIncorrect(passwordChangeRequest.getPassword())) {
             throw new PasswordChangeException(PasswordChangeError.PASSWORD);
-        Optional<User> user = userRepository.findByCode(code);
-        if (user.isEmpty()) throw new PasswordChangeException(PasswordChangeError.CODE);
-        user.get().setPassword(passwordEncoder.encode(passwordChangeRequest.getPassword()));
-        user.get().setCode(null);
-        userRepository.save(user.get());
+        }
+        User user = userRepository.findByCode(passwordChangeRequest.getCode())
+                .orElseThrow(() -> new PasswordChangeException(PasswordChangeError.CODE));
+        user.setPassword(passwordEncoder.encode(passwordChangeRequest.getPassword()));
+        user.setCode(null);
+        userRepository.save(user);
+        PasswordChangeResponse passwordChangeResponse = new PasswordChangeResponse();
         passwordChangeResponse.setResult(true);
         return passwordChangeResponse;
+    }
+
+    public User findUser(String userId) {
+        return userRepository.findById(Integer.parseInt(userId)).orElseThrow();
+    }
+
+    private boolean isEmailPresent(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
+
+    private boolean isUserNameIncorrect(String name) {
+        return name == null || name.isEmpty() || !name.matches(Blog.REGEX_FOR_USER_NAME);
+    }
+
+    private boolean isPasswordIncorrect(String password) {
+        return password == null || password.length() < Blog.PASSWORD_MIN_LENGTH;
+    }
+
+    private boolean isModerator(User user) {
+        return user.getIsModerator() == 1;
     }
 
     private void createLoginResponse(LoginResponse loginResponse, String id) {
@@ -181,16 +192,12 @@ public class UserService {
         userResponse.setPhoto(user.getPhoto());
         userResponse.setEmail(user.getEmail());
         userResponse.setModeration(isModerator(user));
-        if (user.getIsModerator() == 1) {
+        userResponse.setSettings(isModerator(user));
+        if (isModerator(user)) {
             userResponse.setModerationCount(getNewPostsCount());
         } else userResponse.setModerationCount(0);
-        userResponse.setSettings(isModerator(user));
         loginResponse.setResult(true);
         loginResponse.setUser(userResponse);
-    }
-
-    private boolean isModerator(User user) {
-        return user.getIsModerator() == 1;
     }
 
     private int getNewPostsCount() {
@@ -204,7 +211,19 @@ public class UserService {
         return postsCount;
     }
 
-    public User findUser(String id) {
-        return userRepository.findById(Integer. parseInt(id)).orElseThrow();
+    private String savePhoto(MultipartFile photo, Principal principal) throws IOException {
+        String path = Blog.PATH_FOR_AVATARS;
+        String fileName = principal.getName();
+        String formatName = ImageUtil.getFormatName(photo);
+        ImageUtil.saveImage(path, fileName, formatName, photo, Blog.PHOTO_WIDTH, Blog.PHOTO_HEIGHT);
+        return path + fileName + '.' + formatName;
+    }
+
+    private String createRestoreUrl(String code) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + Blog.EMAIL_URI_FOR_CHANGE_PASSWORD + code;
+    }
+
+    private String createRestoreCode() {
+        return String.valueOf(UUID.randomUUID()).replace("-", "");
     }
 }

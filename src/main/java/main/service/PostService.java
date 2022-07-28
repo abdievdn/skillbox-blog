@@ -5,7 +5,6 @@ import main.Blog;
 import main.api.request.general.PostModerationRequest;
 import main.api.request.post.*;
 import main.api.request.post.enums.PostModerationDecision;
-import main.api.request.post.enums.PostRequestKey;
 import main.api.request.post.enums.PostRequestStatus;
 import main.api.response.auth.UserResponse;
 import main.api.response.general.PostModerationResponse;
@@ -36,209 +35,23 @@ public class PostService {
     private final PostVoteService postVoteService;
     private final SettingsService settingsService;
 
-    public PostsResponse getActualPosts(PostRequest postRequest, PostRequestKey key) {
-        PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, "", key);
-        sortPostsByMode(postRequest.getMode(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
-    }
-
-    public PostsResponse searchPosts(PostRequest postRequest, PostRequestKey key) {
-        PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getQuery(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
-    }
-
-    public PostsResponse getPostsByDate(PostRequest postRequest, PostRequestKey key) {
-        PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getDate(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
-    }
-
-    public PostsResponse getPostsByTag(PostRequest postRequest, PostRequestKey key) {
-        PostsResponse postsResponse = new PostsResponse();
-        List<PostResponse> posts = actualPosts(postsResponse, postRequest.getTag(), key);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
+    public PostsResponse getPosts(PostRequest postRequest) {
+        return createPostsResponse(postRequest, getPostsList(postRequest, "", false));
     }
 
     public PostsResponse getPostsMy(PostRequest postRequest, Principal principal) {
-        int count = 0;
-        PostsResponse postsResponse = new PostsResponse();
-        User authorizedUser = userService.findUser(principal.getName());
-        List<PostResponse> posts = new CopyOnWriteArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (!post.getUser().getEmail().equals(authorizedUser.getEmail())) continue;
-            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
-                case INACTIVE:
-                    if (post.getIsActive() == 1) continue;
-                    break;
-                case PENDING:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.NEW)) continue;
-                    break;
-                case DECLINED:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.DECLINED)) continue;
-                    break;
-                case PUBLISHED:
-                    if (post.getIsActive() != 1) continue;
-                    if (!post.getModerationStatus().equals(ModerationStatus.ACCEPTED)) continue;
-                    break;
-                default:
-                    break;
-            }
-            postExtraction(posts, post);
-            count++;
-        }
-        postsResponse.setCount(count);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
+        return createPostsResponse(postRequest, getPostsList(postRequest, principal.getName(), false));
     }
 
     public PostsResponse getPostsModeration(PostRequest postRequest, Principal principal) {
-        int count = 0;
-        PostsResponse postsResponse = new PostsResponse();
-        User authorizedUser = userService.findUser(principal.getName());
-        List<PostResponse> posts = new CopyOnWriteArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            switch (PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase())) {
-                case NEW:
-                    if (isNotMyModeratePost(null, post, ModerationStatus.NEW)) continue;
-                    break;
-                case ACCEPTED:
-                    if (isNotMyModeratePost(authorizedUser, post, ModerationStatus.ACCEPTED)) continue;
-                    break;
-                case DECLINED:
-                    if (isNotMyModeratePost(authorizedUser, post, ModerationStatus.DECLINED)) continue;
-                    break;
-                default:
-                    break;
-            }
-            postExtraction(posts, post);
-            count++;
-        }
-        postsResponse.setCount(count);
-        sortPostsByMode(PostSortOrder.RECENT.name(), posts);
-        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
-        return postsResponse;
+        return createPostsResponse(postRequest, getPostsList(postRequest, principal.getName(), true));
     }
 
-    private boolean isNotMyModeratePost(User authorizedUser, Post post, ModerationStatus status) {
-        if (post.getIsActive() != 1) return true;
-        if (!post.getModerationStatus().equals(status)) return true;
-        if (authorizedUser != null) return !authorizedUser.equals(post.getModerator());
-        return false;
-    }
-
-    public PostByIdResponse getPostById(int id, Principal principal) {
-        PostByIdResponse postByIdResponse = new PostByIdResponse();
+    public PostResponse getPostById(int id, Principal principal) {
         Post post = postRepository.findById(id).orElseThrow();
-        // view count not increases if author or moderator is viewer
-        if (principal != null) {
-            User user = userService.findUser(principal.getName());
-            if (!user.getEmail().equals(post.getUser().getEmail())) {
-                if (user.getIsModerator() != 1) {
-                    post.setViewCount(post.getViewCount() + 1);
-                }
-            }
-        } else {
-            post.setViewCount(post.getViewCount() + 1); // view increases if unregistered user
-        }
-        postRepository.save(post);
-        postByIdResponse.setId(id);
-        postByIdResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
-        UserResponse user = getUserFromPost(post);
-        postByIdResponse.setUser(user);
-        postByIdResponse.setTitle(post.getTitle());
-        postByIdResponse.setText(post.getText());
-        postByIdResponse.setLikeCount(postVoteService.getPostVoteCount(post.getId(), (short) 1));
-        postByIdResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
-        postByIdResponse.setViewCount(post.getViewCount());
-        List<PostCommentResponse> commentsToPost = postCommentService.getComments(post.getId());
-        postByIdResponse.setComments(commentsToPost);
-        Set<String> tagsToPost = new CopyOnWriteArraySet<>();
-        for (Tag tag : post.getTags()) {
-            tagsToPost.add(tag.getName());
-        }
-        postByIdResponse.setTags(tagsToPost);
-        return postByIdResponse;
-    }
-
-    private UserResponse getUserFromPost(Post post) {
-        UserResponse user = new UserResponse();
-        user.setId(post.getUser().getId());
-        user.setName(post.getUser().getName());
-        return user;
-    }
-
-    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws PostAddEditException {
-        Post post = postRepository.findById(ID).orElseThrow();
-        String author = String.valueOf(post.getUser().getId());
-        return createUpdatePost(postAddEditRequest, author, post, principal);
-    }
-
-    public PostAddEditResponse addPost(PostAddEditRequest postAddEditRequest, Principal principal)
-            throws PostAddEditException {
-        String author = principal.getName();
-        return createUpdatePost(postAddEditRequest, author, new Post(), principal);
-    }
-
-    private PostAddEditResponse createUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post, Principal principal) throws PostAddEditException {
-        if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
-            throw new PostAddEditException(PostAddEditError.TITLE);
-        }
-        if (isIncorrectText(postAddEditRequest.getText(), Blog.POST_MIN_TEXT_LENGTH)) {
-            throw new PostAddEditException(PostAddEditError.TEXT);
-        }
-        PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
-        User user = userService.findUser(author);
-        User authorizedUser = userService.findUser(principal.getName());
-        post.setUser(user);
-        post.setIsActive(postAddEditRequest.getActive());
-        post.setTitle(postAddEditRequest.getTitle());
-        post.setText(postAddEditRequest.getText());
-        if (authorizedUser.getIsModerator() != 1 && user.getIsModerator() != 1 && settingsService.getGlobalSettings().isPostPremoderation()) {
-            post.setModerationStatus(ModerationStatus.NEW);
-        } else {
-            post.setModerationStatus(ModerationStatus.ACCEPTED);
-        }
-        // compare timestamp
-        LocalDateTime addedTime = LocalDateTime.now();
-        long nowTimestamp = TimestampUtil.encode(addedTime);
-        long postTimestamp = postAddEditRequest.getTimestamp();
-        if (postTimestamp > nowTimestamp) {
-            addedTime = TimestampUtil.decode(postTimestamp);
-        }
-        post.setTime(addedTime);
-        // add tags, checks new or existing tag
-        if (postAddEditRequest.getTags().length != 0) {
-            Set<Tag> tags = new HashSet<>();
-            String[] requestTags = postAddEditRequest.getTags();
-            for (String requestTag : requestTags) {
-                Optional<Tag> tag = tagRepository.findByName(requestTag);
-                if (tag.isPresent()) {
-                    tags.add(tag.get());
-                } else {
-                    Tag newTag = new Tag();
-                    newTag.setName(requestTag);
-                    tags.add(newTag);
-                }
-            }
-            post.setTags(tags);
-        } else post.setTags(new HashSet<>());
-        postAddEditResponse.setResult(true);
-        postRepository.save(post);
-        return postAddEditResponse;
+        // view count is not increases if author or moderator is viewer
+        checkPostViewer(principal, post);
+        return createPostResponseId(post);
     }
 
     public PostModerationResponse postModerate(PostModerationRequest postModerationRequest, Principal principal) {
@@ -262,48 +75,109 @@ public class PostService {
         return postModerationResponse;
     }
 
-    private boolean isIncorrectText(String text, int textLength) {
-        return text.isEmpty() || text.length() < textLength;
+    public PostAddEditResponse addPost(PostAddEditRequest postAddEditRequest, Principal principal)
+            throws PostAddEditException {
+        return createOrUpdatePost(postAddEditRequest, principal.getName(), new Post(), principal);
     }
 
-    private List<PostResponse> actualPosts(PostsResponse postsResponse, String value, PostRequestKey key) {
+    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws PostAddEditException {
+        Post post = postRepository.findById(ID).orElseThrow();
+        return createOrUpdatePost(postAddEditRequest, String.valueOf(post.getUser().getId()), post, principal);
+    }
+
+    public boolean isActualPost(Post post) {
+        return post.getModerationStatus().equals(ModerationStatus.ACCEPTED) && isActivePost(post);
+    }
+
+    public int getPostsCount() {
         int count = 0;
-        List<PostResponse> posts = new CopyOnWriteArrayList<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (isNotActual(post)) continue;
-            switch (key) {
-                case SEARCH:
-                    String text = post.getText().toLowerCase();
-                    if (!text.contains(value.toLowerCase())) continue;
-                    break;
-                case DATE:
-                    if (!value.equals(post.getTime().toLocalDate().toString())) continue;
-                    break;
-                case TAG:
-                    boolean tagFound = false;
-                    for (Tag tag : post.getTags()) {
-                        if (value.equals(tag.getName())) {
-                            tagFound = true;
-                            break;
-                        }
-                    }
-                    if (!tagFound) continue;
-                default:
-                    break;
+        for (Post post : findAllPosts()) {
+            if (!isActualPost(post)) {
+                continue;
             }
-            postExtraction(posts, post);
             count++;
         }
-        postsResponse.setCount(count);
+        return count;
+    }
+
+    public int getPostsToTagCount(Tag tag) {
+        return (int) tag.getPosts().stream()
+                .filter(this::isActualPost)
+                .count();
+    }
+
+    public Iterable<Post> findAllPosts() {
+        return postRepository.findAll();
+    }
+
+    private List<PostResponse> getPostsList(PostRequest postRequest, String userId, boolean moderate) {
+        checkPostRequestParams(postRequest);
+        List<PostResponse> posts = new CopyOnWriteArrayList<>();
+        for (Post post : findAllPosts()) {
+            if (!isActualPost(post) && postRequest.getStatus() == null) {
+                continue;
+            }
+            if (isAllMatch(postRequest) ||
+                    isQueryMatch(postRequest, post) ||
+                    isDateMatch(postRequest, post) ||
+                    isTagMatch(postRequest, post) ||
+                    isStatusMatchUser(postRequest, post, userId) && !moderate ||
+                    isStatusMatchModerator(postRequest, post, userId) && moderate) {
+                posts.add(createPostResponse(post));
+            }
+        }
         return posts;
     }
 
-    private void postExtraction(List<PostResponse> posts, Post post) {
+    private boolean isAllMatch(PostRequest postRequest) {
+        return postRequest.getQuery() == null && postRequest.getDate() == null && postRequest.getTag() == null && postRequest.getStatus() == null;
+    }
+
+    private boolean isQueryMatch(PostRequest postRequest, Post post) {
+        return postRequest.getQuery() != null && (post.getText().contains(postRequest.getQuery()) || post.getTitle().contains(postRequest.getQuery()));
+    }
+
+    private boolean isDateMatch(PostRequest postRequest, Post post) {
+        return postRequest.getDate() != null && post.getTime().toLocalDate().toString().equals(postRequest.getDate());
+    }
+
+    private boolean isTagMatch(PostRequest postRequest, Post post) {
+        return postRequest.getTag() != null && post.getTags().stream().anyMatch(t -> t.getName().equals(postRequest.getTag()));
+    }
+
+    private boolean isStatusMatch(PostRequest postRequest, Post post) {
+        return postRequest.getStatus() != null && isActivePost(post) &&
+                post.getModerationStatus().equals(PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase()).getModerationStatus());
+    }
+
+    private boolean isStatusMatchUser(PostRequest postRequest, Post post, String userId) {
+        return String.valueOf(post.getUser().getId()).equals(userId) &&
+                (isStatusMatch(postRequest, post) || !isActivePost(post) && postRequest.getStatus().equalsIgnoreCase(PostRequestStatus.INACTIVE.name()));
+
+    }
+
+    private boolean isStatusMatchModerator(PostRequest postRequest, Post post, String userId) {
+        return post.getModerator() == null && isStatusMatch(postRequest, post) ||
+                post.getModerator() != null && String.valueOf(post.getModerator().getId()).equals(userId) && isStatusMatch(postRequest, post);
+    }
+
+    private boolean isActivePost(Post post) {
+        return post.getIsActive() == 1;
+    }
+
+    private PostsResponse createPostsResponse(PostRequest postRequest, List<PostResponse> posts) {
+        PostsResponse postsResponse = new PostsResponse();
+        sortPostsByMode(postRequest.getMode(), posts);
+        postsResponse.setPosts(postsSublist(postRequest.getOffset(), postRequest.getLimit(), posts));
+        postsResponse.setCount(posts.size());
+        return postsResponse;
+    }
+
+    private PostResponse createPostResponse(Post post) {
         PostResponse postResponse = new PostResponse();
         postResponse.setId(post.getId());
         postResponse.setTimestamp(TimestampUtil.encode(post.getTime()));
-        UserResponse user = getUserFromPost(post);
+        UserResponse user = createUserResponseFromPost(post);
         postResponse.setUser(user);
         postResponse.setTitle(post.getTitle());
         postResponse.setAnnounce(announce(post.getText()));
@@ -311,17 +185,87 @@ public class PostService {
         postResponse.setDislikeCount(postVoteService.getPostVoteCount(post.getId(), (short) -1));
         postResponse.setCommentCount(postCommentService.getCommentsCount(post.getId()));
         postResponse.setViewCount(post.getViewCount());
-        posts.add(postResponse);
+        return postResponse;
     }
 
-    public static boolean isNotActual(Post post) {
-        return !post.getModerationStatus().equals(ModerationStatus.ACCEPTED) || post.getIsActive() != 1;
+    private PostResponse createPostResponseId(Post post) {
+        PostResponse postResponse = createPostResponse(post);
+        postResponse.setAnnounce(null);
+        postResponse.setCommentCount(null);
+        postResponse.setText(post.getText());
+        List<PostCommentResponse> commentsToPost = postCommentService.getComments(post.getId());
+        postResponse.setComments(commentsToPost);
+        Set<String> tagsToPost = new CopyOnWriteArraySet<>();
+        for (Tag tag : post.getTags()) {
+            tagsToPost.add(tag.getName());
+        }
+        postResponse.setTags(tagsToPost);
+        return postResponse;
+    }
+
+    private UserResponse createUserResponseFromPost(Post post) {
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(post.getUser().getId());
+        userResponse.setName(post.getUser().getName());
+        return userResponse;
+    }
+
+    private PostAddEditResponse createOrUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post, Principal principal) throws PostAddEditException {
+        if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
+            throw new PostAddEditException(PostAddEditError.TITLE);
+        }
+        if (isIncorrectText(postAddEditRequest.getText(), Blog.POST_MIN_TEXT_LENGTH)) {
+            throw new PostAddEditException(PostAddEditError.TEXT);
+        }
+        User user = userService.findUser(author);
+        User authorizedUser = userService.findUser(principal.getName());
+        post.setUser(user);
+        post.setIsActive(postAddEditRequest.getActive());
+        post.setTitle(postAddEditRequest.getTitle());
+        post.setText(postAddEditRequest.getText());
+        if (authorizedUser.getIsModerator() != 1 && user.getIsModerator() != 1 && settingsService.getGlobalSettings().isPostPremoderation()) {
+            post.setModerationStatus(ModerationStatus.NEW);
+        } else {
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
+        }
+        post.setTime(getLocalDateTime(postAddEditRequest.getTimestamp()));
+        post.setTags(getTagsToPost(postAddEditRequest.getTags()));
+        postRepository.save(post);
+        PostAddEditResponse postAddEditResponse = new PostAddEditResponse();
+        postAddEditResponse.setResult(true);
+        return postAddEditResponse;
+    }
+
+    private Set<Tag> getTagsToPost(Set<String> tags) {
+        Set<Tag> refreshTags = new HashSet<>();
+        tags.forEach(t -> {
+            Tag tag = tagRepository.findByName(t).orElseGet(Tag::new);
+            if (tag.getName().isEmpty()) {
+                tag.setName(t);
+            }
+            refreshTags.add(tag);
+        });
+        return refreshTags;
+    }
+
+    private LocalDateTime getLocalDateTime(Long timestamp) {
+        LocalDateTime addedTime = LocalDateTime.now();
+        long nowTimestamp = TimestampUtil.encode(addedTime);
+        long postTimestamp = timestamp;
+        if (postTimestamp > nowTimestamp) {
+            addedTime = TimestampUtil.decode(postTimestamp);
+        }
+        return addedTime;
+    }
+
+    private boolean isIncorrectText(String text, int textLength) {
+        return text.isEmpty() || text.length() < textLength;
     }
 
     private String announce(String text) {
         String announceText = text.length() > Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH ?
-                text.substring(0, Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH).concat("...") : text;
-        return Jsoup.parse(announceText).text();
+                text.substring(0, Blog.POST_ANNOUNCE_MAX_TEXT_LENGTH) : text;
+        return Jsoup.parse(announceText).text().concat("...");
     }
 
     private void sortPostsByMode(String mode, List<PostResponse> posts) {
@@ -349,5 +293,26 @@ public class PostService {
             count = posts.size();
         }
         return posts.subList(offset, count);
+    }
+
+    private void checkPostRequestParams(PostRequest postRequest) {
+        if (postRequest.getLimit() == 0) {
+            postRequest.setLimit(10);
+        }
+        if (postRequest.getMode() == null) {
+            postRequest.setMode(PostSortOrder.RECENT.name());
+        }
+    }
+
+    private void checkPostViewer(Principal principal, Post post) {
+        if (principal != null) {
+            User user = userService.findUser(principal.getName());
+            if (!user.getEmail().equals(post.getUser().getEmail()) && user.getIsModerator() != 1) {
+                post.setViewCount(post.getViewCount() + 1);
+            }
+        } else {
+            post.setViewCount(post.getViewCount() + 1); // view increases if unregistered user
+        }
+        postRepository.save(post);
     }
 }

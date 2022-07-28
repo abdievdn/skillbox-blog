@@ -1,6 +1,6 @@
 package main.security;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import main.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-@Data
+@AllArgsConstructor
 public class SecurityUser implements UserDetails {
 
     private final String username;

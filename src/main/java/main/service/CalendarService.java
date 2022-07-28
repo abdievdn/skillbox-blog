@@ -3,7 +3,6 @@ package main.service;
 import lombok.AllArgsConstructor;
 import main.api.response.general.CalendarResponse;
 import main.model.Post;
-import main.model.repository.PostRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,15 +14,14 @@ import java.util.TreeSet;
 @AllArgsConstructor
 public class CalendarService {
 
-    private final PostRepository postRepository;
+    private final PostService postService;
 
     public CalendarResponse getYears() {
         CalendarResponse calendarResponse = new CalendarResponse();
         TreeSet<Integer> calendarYears = new TreeSet<>();
         Map<String, Integer> calendarPosts = new TreeMap<>();
-        Iterable<Post> postIterable = postRepository.findAll();
-        for (Post post : postIterable) {
-            if (PostService.isNotActual(post)) continue;
+        for (Post post : postService.findAllPosts()) {
+            if (!postService.isActualPost(post)) continue;
             LocalDateTime postDate = post.getTime();
             calendarYears.add(postDate.getYear());
             String postDateFormat = postDate.toLocalDate().toString();
