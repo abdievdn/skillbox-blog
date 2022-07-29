@@ -18,17 +18,62 @@ public class SettingsService {
         createSettingsIfNoExist();
     }
 
+    public SettingsResponse getGlobalSettings() {
+        SettingsResponse settingsResponse = new SettingsResponse();
+        Iterable<GlobalSettings> settings = settingsRepository.findAll();
+        settings.forEach(s -> {
+            if (isMultiuserMode(s)) {
+                settingsResponse.setMultiuserMode(stringToBoolean(s.getValue()));
+            }
+            if (isPostPremoderation(s)) {
+                settingsResponse.setPostPremoderation(stringToBoolean(s.getValue()));
+            }
+            if (isStatisticsIsPublic(s)) {
+                settingsResponse.setStatisticsIsPublic(stringToBoolean(s.getValue()));
+            }
+        });
+        return settingsResponse;
+    }
+
+    public void setGlobalSettings(SettingsRequest settingsRequest) {
+        Iterable<GlobalSettings> settings = settingsRepository.findAll();
+        settings.forEach(s -> {
+            if (isMultiuserMode(s)) {
+                s.setValue(booleanToString(settingsRequest.isMultiuserMode()));
+            }
+            if (isPostPremoderation(s)) {
+                s.setValue(booleanToString(settingsRequest.isPostPremoderation()));
+            }
+            if (isStatisticsIsPublic(s)) {
+                s.setValue(booleanToString(settingsRequest.isStatisticsIsPublic()));
+            }
+            settingsRepository.save(s);
+        });
+    }
+
+    private boolean isMultiuserMode(GlobalSettings s) {
+        return s.getCode().equals(SettingsCode.MULTIUSER_MODE.name());
+    }
+
+    private boolean isPostPremoderation(GlobalSettings s) {
+        return s.getCode().equals(SettingsCode.POST_PREMODERATION.name());
+    }
+
+    private boolean isStatisticsIsPublic(GlobalSettings s) {
+        return s.getCode().equals(SettingsCode.STATISTICS_IS_PUBLIC.name());
+    }
+
     private void createSettingsIfNoExist() {
         Iterable<GlobalSettings> globalSettings = settingsRepository.findAll();
         if (globalSettings.iterator().hasNext()) {
             return;
         }
-        insertSettings(SettingsCode.MULTIUSER_MODE.name(), Blog.SETTINGS_MULTIUSER_MODE_TEXT, Blog.YES_VALUE);
-        insertSettings(SettingsCode.POST_PREMODERATION.name(), Blog.SETTINGS_POST_PREMODERATION_TEXT, Blog.YES_VALUE);
-        insertSettings(SettingsCode.STATISTICS_IS_PUBLIC.name(), Blog.SETTINGS_STATISTICS_IS_PUBLIC_TEXT, Blog.NO_VALUE);
+        insertSetting(SettingsCode.MULTIUSER_MODE.name(), Blog.SETTINGS_MULTIUSER_MODE_TEXT, Blog.YES_VALUE);
+        insertSetting(SettingsCode.POST_PREMODERATION.name(), Blog.SETTINGS_POST_PREMODERATION_TEXT, Blog.YES_VALUE);
+        insertSetting(SettingsCode.STATISTICS_IS_PUBLIC.name(), Blog.SETTINGS_STATISTICS_IS_PUBLIC_TEXT, Blog.NO_VALUE);
     }
 
-    private void insertSettings(String code, String name, String value) {
+    private void insertSetting(String code, String name, String value) {
         GlobalSettings globalSettings = new GlobalSettings();
         globalSettings.setCode(code);
         globalSettings.setName(name);
@@ -36,51 +81,11 @@ public class SettingsService {
         settingsRepository.save(globalSettings);
     }
 
-    public SettingsResponse getGlobalSettings() {
-        SettingsResponse settingsResponse = new SettingsResponse();
-        Iterable<GlobalSettings> globalSettings = settingsRepository.findAll();
-        for (GlobalSettings settings : globalSettings) {
-            switch (SettingsCode.valueOf(settings.getCode())) {
-                case MULTIUSER_MODE :
-                    settingsResponse.setMultiuserMode(stringToBoolean(settings.getValue()));
-                    break;
-                case POST_PREMODERATION:
-                    settingsResponse.setPostPremoderation(stringToBoolean(settings.getValue()));
-                    break;
-                case STATISTICS_IS_PUBLIC:
-                    settingsResponse.setStatisticsIsPublic(stringToBoolean(settings.getValue()));
-                    break;
-                default:
-                    break;
-            }
-        }
-        return settingsResponse;
-    }
-
-    public void setGlobalSettings(SettingsRequest settingsRequest) {
-        Iterable<GlobalSettings> globalSettingsIterable = settingsRepository.findAll();
-        for (GlobalSettings settings : globalSettingsIterable) {
-            switch (SettingsCode.valueOf(settings.getCode())) {
-                case MULTIUSER_MODE:
-                    settings.setValue(booleanToString(settingsRequest.isMultiuserMode()));
-                    break;
-                case POST_PREMODERATION:
-                    settings.setValue(booleanToString(settingsRequest.isPostPremoderation()));
-                    break;
-                case STATISTICS_IS_PUBLIC:
-                    settings.setValue(booleanToString(settingsRequest.isStatisticsIsPublic()));
-                    break;
-                default: break;
-            }
-            settingsRepository.save(settings);
-        }
-    }
-
     private boolean stringToBoolean(String value) {
         return value.equals("YES");
     }
 
-    private String booleanToString (boolean value) {
+    private String booleanToString(boolean value) {
         return value ? "YES" : "NO";
     }
 }

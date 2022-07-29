@@ -240,7 +240,7 @@ public class PostService {
         Set<Tag> refreshTags = new HashSet<>();
         tags.forEach(t -> {
             Tag tag = tagRepository.findByName(t).orElseGet(Tag::new);
-            if (tag.getName().isEmpty()) {
+            if (tag.getName() == null) {
                 tag.setName(t);
             }
             refreshTags.add(tag);
