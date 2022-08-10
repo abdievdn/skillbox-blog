@@ -22,11 +22,4 @@ public class DefaultController {
     public String index() {
         return "forward:/";
     }
-
-    public static ResponseEntity<?> checkResponse(Object response) {
-        if (response == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-        return ResponseEntity.ok(response);
-    }
 }

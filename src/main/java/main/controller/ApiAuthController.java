@@ -4,13 +4,14 @@ import lombok.AllArgsConstructor;
 import main.api.request.auth.*;
 import main.api.response.auth.*;
 import main.api.response.auth.CaptchaCodeResponse;
-import main.controller.advice.exception.PasswordChangeException;
-import main.controller.advice.exception.RegisterException;
+import main.controller.advice.ErrorsResponseException;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import java.io.IOException;
 import java.security.Principal;
 
 @RestController
@@ -22,41 +23,35 @@ public class ApiAuthController {
     private final UserService userService;
 
     @GetMapping("/check")
-    public ResponseEntity<?> check(Principal principal) {
-        LoginResponse loginResponse = userService.checkUser(principal);
-        return DefaultController.checkResponse(loginResponse);
+    public ResponseEntity<LoginResponse> check(Principal principal) {
+        return ResponseEntity.ok(userService.checkUser(principal));
     }
 
     @GetMapping("/captcha")
-    public ResponseEntity<?> captcha() {
-        CaptchaCodeResponse captchaResponse = captchaService.generateCaptcha();
-        return DefaultController.checkResponse(captchaResponse);
+    public ResponseEntity<CaptchaCodeResponse> captcha() throws IOException {
+        return ResponseEntity.ok(captchaService.generateCaptcha());
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest)
-            throws RegisterException {
-        RegisterResponse registerResponse = userService.userRegister(registerRequest);
-        return DefaultController.checkResponse(registerResponse);
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest registerRequest)
+            throws ErrorsResponseException {
+        return ResponseEntity.ok(userService.userRegister(registerRequest));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        LoginResponse loginResponse = userService.userLogin(loginRequest);
-        return DefaultController.checkResponse(loginResponse);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        return ResponseEntity.ok(userService.userLogin(loginRequest));
     }
 
     // logout configured with CustomLogoutSuccessHandler in SecurityConfig
 
     @PostMapping("/restore")
-    public ResponseEntity<?> passwordRestore(@RequestBody PasswordRestoreRequest passwordRestoreRequest) {
-        PasswordRestoreResponse passwordRestoreResponse = userService.passwordRestore(passwordRestoreRequest);
-        return DefaultController.checkResponse(passwordRestoreResponse);
+    public ResponseEntity<PasswordRestoreResponse> passwordRestore(@Valid @RequestBody PasswordRestoreRequest passwordRestoreRequest) {
+        return ResponseEntity.ok(userService.passwordRestore(passwordRestoreRequest));
     }
 
     @PostMapping("/password")
-    public ResponseEntity<?> passwordChange(@RequestBody PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
-        PasswordChangeResponse passwordChangeResponse = userService.passwordChange(passwordChangeRequest);
-        return DefaultController.checkResponse(passwordChangeResponse);
+    public ResponseEntity<PasswordChangeResponse> passwordChange(@Valid @RequestBody PasswordChangeRequest passwordChangeRequest) throws ErrorsResponseException {
+        return ResponseEntity.ok(userService.passwordChange(passwordChangeRequest));
     }
 }

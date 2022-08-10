@@ -22,7 +22,7 @@ public class CaptchaCodeService {
 
     private final CaptchaCodeRepository captchaCodeRepository;
 
-    public CaptchaCodeResponse generateCaptcha() {
+    public CaptchaCodeResponse generateCaptcha() throws IOException {
         deleteExpiredCaptcha();
         CaptchaCodeResponse captchaResponse = new CaptchaCodeResponse();
         String secret = UUID.randomUUID().toString().substring(0, 8);
@@ -30,20 +30,15 @@ public class CaptchaCodeService {
         String code = cage.getTokenGenerator().next().substring(0, 4);
         byte[] image;
         InputStream inputStream = new ByteArrayInputStream(cage.draw(code));
-        try {
-            image = inputStream.readAllBytes();
-            String codeImage = "data:image/png;base64, " + Base64.getEncoder().encodeToString(image);
-            captchaResponse.setSecret(secret);
-            captchaResponse.setImage(codeImage);
-            CaptchaCode captchaCode = new CaptchaCode();
-            captchaCode.setSecretCode(secret);
-            captchaCode.setCode(code);
-            captchaCode.setTime(LocalDateTime.now());
-            captchaCodeRepository.save(captchaCode);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        image = inputStream.readAllBytes();
+        String codeImage = "data:image/png;base64, " + Base64.getEncoder().encodeToString(image);
+        captchaResponse.setSecret(secret);
+        captchaResponse.setImage(codeImage);
+        CaptchaCode captchaCode = new CaptchaCode();
+        captchaCode.setSecretCode(secret);
+        captchaCode.setCode(code);
+        captchaCode.setTime(LocalDateTime.now());
+        captchaCodeRepository.save(captchaCode);
         return captchaResponse;
     }
 

@@ -2,7 +2,7 @@ package main.service;
 
 import lombok.AllArgsConstructor;
 import main.Blog;
-import main.api.response.general.StatisticsResponse;
+import main.api.response.statistics.StatisticsResponse;
 import main.model.GlobalSettings;
 import main.model.Post;
 import main.model.User;

@@ -3,6 +3,9 @@ package main.api.request.general;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotNull;
+
+@NotNull
 @Data
 public class SettingsRequest {
     @JsonProperty("MULTIUSER_MODE")

@@ -17,7 +17,6 @@ public class CalendarService {
     private final PostService postService;
 
     public CalendarResponse getYears() {
-        CalendarResponse calendarResponse = new CalendarResponse();
         TreeSet<Integer> calendarYears = new TreeSet<>();
         Map<String, Integer> calendarPosts = new TreeMap<>();
         for (Post post : postService.findAllPosts()) {
@@ -31,6 +30,7 @@ public class CalendarService {
                 calendarPosts.put(postDateFormat, 1);
             }
         }
+        CalendarResponse calendarResponse = new CalendarResponse();
         calendarResponse.setYears(calendarYears);
         calendarResponse.setPosts(calendarPosts);
         return calendarResponse;

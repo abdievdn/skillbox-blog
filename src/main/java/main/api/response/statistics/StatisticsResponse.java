@@ -1,4 +1,4 @@
-package main.api.response.general;
+package main.api.response.statistics;
 
 import lombok.Data;
 

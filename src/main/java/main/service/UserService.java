@@ -3,15 +3,11 @@ package main.service;
 import lombok.AllArgsConstructor;
 import main.Blog;
 import main.api.request.auth.*;
-import main.api.request.general.ProfileMyRequest;
+import main.api.request.profile.ProfileMyRequest;
 import main.api.response.auth.*;
-import main.api.response.general.ProfileMyResponse;
-import main.controller.advice.error.PasswordChangeError;
-import main.controller.advice.error.ProfileMyError;
-import main.controller.advice.exception.PasswordChangeException;
-import main.controller.advice.exception.ProfileMyException;
-import main.controller.advice.error.RegisterError;
-import main.controller.advice.exception.RegisterException;
+import main.api.response.profile.ProfileMyResponse;
+import main.controller.advice.ErrorsNum;
+import main.controller.advice.ErrorsResponseException;
 import main.model.ModerationStatus;
 import main.model.Post;
 import main.model.User;
@@ -30,7 +26,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -54,21 +49,21 @@ public class UserService {
         return loginResponse;
     }
 
-    public RegisterResponse userRegister(RegisterRequest registerRequest) throws RegisterException {
+    public RegisterResponse userRegister(RegisterRequest registerRequest) throws ErrorsResponseException {
         RegisterResponse registerResponse = new RegisterResponse();
         if (isEmailPresent(registerRequest.getEmail())) {
-            throw new RegisterException(RegisterError.EMAIL);
+            throw new ErrorsResponseException(ErrorsNum.EMAIL);
         }
         if (!captchaCodeService.checkCaptchaCode(registerRequest.getCaptcha(), registerRequest.getCaptchaSecret())) {
-            throw new RegisterException(RegisterError.CAPTCHA);
+            throw new ErrorsResponseException(ErrorsNum.CAPTCHA);
         }
         String userName = registerRequest.getName();
         if (isUserNameIncorrect(userName)) {
-            throw new RegisterException(RegisterError.NAME);
+            throw new ErrorsResponseException(ErrorsNum.NAME);
         }
         String userPassword = registerRequest.getPassword();
         if (isPasswordIncorrect(userPassword)) {
-            throw new RegisterException(RegisterError.PASSWORD);
+            throw new ErrorsResponseException(ErrorsNum.PASSWORD);
         }
         User user = new User();
         user.setEmail(registerRequest.getEmail());
@@ -86,9 +81,7 @@ public class UserService {
         LoginResponse loginResponse = new LoginResponse();
         try {
             User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
-            Authentication auth = authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(
-                            user.getId(), loginRequest.getPassword()));
+            Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getId(), loginRequest.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(auth);
             createLoginResponse(loginResponse, String.valueOf(user.getId()));
         } catch (Exception e) {
@@ -99,22 +92,24 @@ public class UserService {
     }
 
     public ProfileMyResponse userProfileChange(ProfileMyRequest profileMyRequest, MultipartFile photo, Principal principal)
-            throws ProfileMyException, IOException {
+            throws ErrorsResponseException, IOException {
         User user = findUser(principal.getName());
         if (!profileMyRequest.getEmail().equals(user.getEmail()) && isEmailPresent(profileMyRequest.getEmail())) {
-            throw new ProfileMyException(ProfileMyError.EMAIL);
+            throw new ErrorsResponseException(ErrorsNum.EMAIL);
         } else {
             user.setEmail(profileMyRequest.getEmail());
         }
         if (isUserNameIncorrect(profileMyRequest.getName())) {
-            throw new ProfileMyException(ProfileMyError.NAME);
+            throw new ErrorsResponseException(ErrorsNum.NAME);
         } else {
             user.setName(profileMyRequest.getName());
         }
-        if (isPasswordIncorrect(profileMyRequest.getPassword())) {
-            throw new ProfileMyException(ProfileMyError.PASSWORD);
-        } else {
-            user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
+        if (profileMyRequest.getPassword() != null) {
+            if (isPasswordIncorrect(profileMyRequest.getPassword())) {
+                throw new ErrorsResponseException(ErrorsNum.PASSWORD);
+            } else {
+                user.setPassword(passwordEncoder.encode(profileMyRequest.getPassword()));
+            }
         }
         if (profileMyRequest.getRemovePhoto() == 1) {
             user.setPhoto("");
@@ -123,7 +118,7 @@ public class UserService {
         profileMyResponse.setResult(true);
         if (photo != null) {
             if (photo.getBytes().length > Blog.PHOTO_LIMIT_WEIGHT) {
-                throw new ProfileMyException(ProfileMyError.PHOTO);
+                throw new ErrorsResponseException(ErrorsNum.PHOTO);
             }
             user.setPhoto(savePhoto(photo, principal));
         }
@@ -132,30 +127,31 @@ public class UserService {
     }
 
     public PasswordRestoreResponse passwordRestore(PasswordRestoreRequest passwordRestoreRequest) {
-        String email = passwordRestoreRequest.getEmail();
         PasswordRestoreResponse passwordRestoreResponse = new PasswordRestoreResponse();
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) {
+        try {
+            String email = passwordRestoreRequest.getEmail();
+            User user = userRepository.findByEmail(email).orElseThrow();
+            String code = createRestoreCode();
+            user.setCode(code);
+            userRepository.save(user);
+            mailSenderService.sendEmail(email, createRestoreUrl(code));
+            passwordRestoreResponse.setResult(true);
+        }
+        catch (Exception e) {
             passwordRestoreResponse.setResult(false);
             return passwordRestoreResponse;
         }
-        String code = createRestoreCode();
-        user.get().setCode(code);
-        userRepository.save(user.get());
-        mailSenderService.sendEmail(email, createRestoreUrl(code));
-        passwordRestoreResponse.setResult(true);
         return passwordRestoreResponse;
     }
 
-    public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws PasswordChangeException {
+    public PasswordChangeResponse passwordChange(PasswordChangeRequest passwordChangeRequest) throws ErrorsResponseException {
         if (!captchaCodeService.checkCaptchaCode(passwordChangeRequest.getCaptcha(), passwordChangeRequest.getCaptchaSecret())) {
-            throw new PasswordChangeException(PasswordChangeError.CAPTCHA);
+            throw new ErrorsResponseException(ErrorsNum.CAPTCHA);
         }
         if (isPasswordIncorrect(passwordChangeRequest.getPassword())) {
-            throw new PasswordChangeException(PasswordChangeError.PASSWORD);
+            throw new ErrorsResponseException(ErrorsNum.PASSWORD);
         }
-        User user = userRepository.findByCode(passwordChangeRequest.getCode())
-                .orElseThrow(() -> new PasswordChangeException(PasswordChangeError.CODE));
+        User user = userRepository.findByCode(passwordChangeRequest.getCode()).orElseThrow(() -> new ErrorsResponseException(ErrorsNum.CODE));
         user.setPassword(passwordEncoder.encode(passwordChangeRequest.getPassword()));
         user.setCode(null);
         userRepository.save(user);
@@ -173,11 +169,11 @@ public class UserService {
     }
 
     private boolean isUserNameIncorrect(String name) {
-        return name == null || name.isEmpty() || !name.matches(Blog.REGEX_FOR_USER_NAME);
+        return name.isEmpty() || !name.matches(Blog.REGEX_FOR_USER_NAME);
     }
 
     private boolean isPasswordIncorrect(String password) {
-        return password == null || password.length() < Blog.PASSWORD_MIN_LENGTH;
+        return password.length() < Blog.PASSWORD_MIN_LENGTH;
     }
 
     private boolean isModerator(User user) {

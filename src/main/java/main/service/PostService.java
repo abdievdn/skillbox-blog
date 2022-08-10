@@ -9,8 +9,8 @@ import main.api.request.post.enums.PostRequestStatus;
 import main.api.response.auth.UserResponse;
 import main.api.response.general.PostModerationResponse;
 import main.api.response.post.*;
-import main.controller.advice.error.PostAddEditError;
-import main.controller.advice.exception.PostAddEditException;
+import main.controller.advice.ErrorsNum;
+import main.controller.advice.ErrorsResponseException;
 import main.model.*;
 import main.model.repository.*;
 import main.service.enums.PostSortOrder;
@@ -56,8 +56,6 @@ public class PostService {
 
     public PostModerationResponse postModerate(PostModerationRequest postModerationRequest, Principal principal) {
         User user = userService.findUser(principal.getName());
-        if (user.getIsModerator() != 1) return null;
-        PostModerationResponse postModerationResponse = new PostModerationResponse();
         Post post = postRepository.findById(postModerationRequest.getPostId()).orElseThrow();
         switch (PostModerationDecision.valueOf(postModerationRequest.getDecision().toUpperCase())) {
             case ACCEPT:
@@ -71,16 +69,17 @@ public class PostService {
         }
         post.setModerator(user);
         postRepository.save(post);
+        PostModerationResponse postModerationResponse = new PostModerationResponse();
         postModerationResponse.setResult(true);
         return postModerationResponse;
     }
 
     public PostAddEditResponse addPost(PostAddEditRequest postAddEditRequest, Principal principal)
-            throws PostAddEditException {
+            throws ErrorsResponseException {
         return createOrUpdatePost(postAddEditRequest, principal.getName(), new Post(), principal);
     }
 
-    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws PostAddEditException {
+    public PostAddEditResponse editPost(PostAddEditRequest postAddEditRequest, int ID, Principal principal) throws ErrorsResponseException {
         Post post = postRepository.findById(ID).orElseThrow();
         return createOrUpdatePost(postAddEditRequest, String.valueOf(post.getUser().getId()), post, principal);
     }
@@ -210,12 +209,12 @@ public class PostService {
         return userResponse;
     }
 
-    private PostAddEditResponse createOrUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post, Principal principal) throws PostAddEditException {
+    private PostAddEditResponse createOrUpdatePost(PostAddEditRequest postAddEditRequest, String author, Post post, Principal principal) throws ErrorsResponseException {
         if (isIncorrectText(postAddEditRequest.getTitle(), Blog.POST_MIN_TITLE_LENGTH)) {
-            throw new PostAddEditException(PostAddEditError.TITLE);
+            throw new ErrorsResponseException(ErrorsNum.TITLE);
         }
         if (isIncorrectText(postAddEditRequest.getText(), Blog.POST_MIN_TEXT_LENGTH)) {
-            throw new PostAddEditException(PostAddEditError.TEXT);
+            throw new ErrorsResponseException(ErrorsNum.TEXT);
         }
         User user = userService.findUser(author);
         User authorizedUser = userService.findUser(principal.getName());

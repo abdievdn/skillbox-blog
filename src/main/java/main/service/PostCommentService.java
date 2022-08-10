@@ -6,11 +6,10 @@ import main.api.request.general.PostCommentAddRequest;
 import main.api.response.general.PostCommentAddResponse;
 import main.api.response.post.PostCommentResponse;
 import main.api.response.auth.UserResponse;
-import main.controller.advice.error.PostCommentAddError;
-import main.controller.advice.exception.PostCommentAddException;
+import main.controller.advice.ErrorsNum;
+import main.controller.advice.ErrorsResponseException;
 import main.model.Post;
 import main.model.PostComment;
-import main.model.User;
 import main.model.repository.PostCommentRepository;
 import main.model.repository.PostRepository;
 import main.service.utils.TimestampUtil;
@@ -58,20 +57,18 @@ public class PostCommentService {
         return commentsCount;
     }
 
-    public PostCommentAddResponse addComment(PostCommentAddRequest postCommentAddRequest, Principal principal) throws PostCommentAddException {
-        User user = userService.findUser(principal.getName());
+    public PostCommentAddResponse addComment(PostCommentAddRequest postCommentAddRequest, Principal principal) throws ErrorsResponseException {
         Post post = postRepository.findById(postCommentAddRequest.getPostId()).orElseThrow();
         if (postCommentAddRequest.getText().length() < Blog.COMMENT_TEXT_LENGTH) {
-            throw new PostCommentAddException(PostCommentAddError.TEXT);
+            throw new ErrorsResponseException(ErrorsNum.COMMENT_TEXT);
         }
         PostComment postComment = new PostComment();
         if (postCommentAddRequest.getParentId() != null) {
-            PostComment parentPost = postCommentRepository.findById(postCommentAddRequest.getParentId()).orElseThrow();
-            postComment.setParent(parentPost);
+            postComment.setParent(postCommentRepository.findById(postCommentAddRequest.getParentId()).orElseThrow());
         }
         postComment.setPost(post);
         postComment.setText(postCommentAddRequest.getText());
-        postComment.setUser(user);
+        postComment.setUser(userService.findUser(principal.getName()));
         postComment.setTime(LocalDateTime.now());
         postCommentRepository.save(postComment);
         PostCommentAddResponse postCommentAddResponse = new PostCommentAddResponse();
