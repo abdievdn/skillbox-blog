@@ -25,19 +25,19 @@ public class ApiPostController {
 
     @GetMapping({"", "/search", "/byDate", "/byTag"})
     public ResponseEntity<PostsResponse> post(PostRequest postRequest) {
-        return checkResponse(postService.getPosts(postRequest));
+        return checkResponse(postService.getPosts(postRequest, "", false));
     }
 
     @PreAuthorize("hasAuthority('user:write')")
     @GetMapping("/my")
     public ResponseEntity<PostsResponse> postMy(PostRequest postRequest, Principal principal) {
-        return checkResponse(postService.getPostsMy(postRequest, principal));
+        return checkResponse(postService.getPosts(postRequest, principal.getName(), false));
     }
 
     @PreAuthorize("hasAuthority('user:moderate')")
     @GetMapping("/moderation")
     public ResponseEntity<PostsResponse> postModeration(PostRequest postRequest, Principal principal) {
-        return checkResponse(postService.getPostsModeration(postRequest, principal));
+        return checkResponse(postService.getPosts(postRequest, principal.getName(), true));
     }
 
     @GetMapping("/{id}")

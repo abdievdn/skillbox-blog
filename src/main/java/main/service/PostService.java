@@ -35,21 +35,12 @@ public class PostService {
     private final PostVoteService postVoteService;
     private final SettingsService settingsService;
 
-    public PostsResponse getPosts(PostRequest postRequest) {
-        return createPostsResponse(postRequest, getPostsList(postRequest, "", false));
-    }
-
-    public PostsResponse getPostsMy(PostRequest postRequest, Principal principal) {
-        return createPostsResponse(postRequest, getPostsList(postRequest, principal.getName(), false));
-    }
-
-    public PostsResponse getPostsModeration(PostRequest postRequest, Principal principal) {
-        return createPostsResponse(postRequest, getPostsList(postRequest, principal.getName(), true));
+    public PostsResponse getPosts(PostRequest postRequest, String login, boolean moderate) {
+        return createPostsResponse(postRequest, getPostsList(postRequest, login, moderate));
     }
 
     public PostResponse getPostById(int id, Principal principal) {
         Post post = postRepository.findById(id).orElseThrow();
-        // view count is not increases if author or moderator is viewer
         checkPostViewer(principal, post);
         return createPostResponseId(post);
     }
@@ -129,35 +120,50 @@ public class PostService {
     }
 
     private boolean isAllMatch(PostRequest postRequest) {
-        return postRequest.getQuery() == null && postRequest.getDate() == null && postRequest.getTag() == null && postRequest.getStatus() == null;
+        return postRequest.getQuery() == null &&
+                postRequest.getDate() == null &&
+                postRequest.getTag() == null &&
+                postRequest.getStatus() == null;
     }
 
     private boolean isQueryMatch(PostRequest postRequest, Post post) {
-        return postRequest.getQuery() != null && (post.getText().contains(postRequest.getQuery()) || post.getTitle().contains(postRequest.getQuery()));
+        return postRequest.getQuery() != null &&
+                (post.getText().contains(postRequest.getQuery()) ||
+                        post.getTitle().contains(postRequest.getQuery()));
     }
 
     private boolean isDateMatch(PostRequest postRequest, Post post) {
-        return postRequest.getDate() != null && post.getTime().toLocalDate().toString().equals(postRequest.getDate());
+        return postRequest.getDate() != null &&
+                post.getTime().toLocalDate().toString().equals(postRequest.getDate());
     }
 
     private boolean isTagMatch(PostRequest postRequest, Post post) {
-        return postRequest.getTag() != null && post.getTags().stream().anyMatch(t -> t.getName().equals(postRequest.getTag()));
+        return postRequest.getTag() != null &&
+                post.getTags()
+                        .stream()
+                        .anyMatch(t -> t.getName().equals(postRequest.getTag()));
     }
 
     private boolean isStatusMatch(PostRequest postRequest, Post post) {
-        return postRequest.getStatus() != null && isActivePost(post) &&
-                post.getModerationStatus().equals(PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase()).getModerationStatus());
+        return postRequest.getStatus() != null &&
+                isActivePost(post) &&
+                post.getModerationStatus()
+                        .equals(PostRequestStatus.valueOf(postRequest.getStatus().toUpperCase()).getModerationStatus());
     }
 
     private boolean isStatusMatchUser(PostRequest postRequest, Post post, String userId) {
         return String.valueOf(post.getUser().getId()).equals(userId) &&
-                (isStatusMatch(postRequest, post) || !isActivePost(post) && postRequest.getStatus().equalsIgnoreCase(PostRequestStatus.INACTIVE.name()));
+                (isStatusMatch(postRequest, post) ||
+                        !isActivePost(post) &&
+                                postRequest.getStatus().equalsIgnoreCase(PostRequestStatus.INACTIVE.name()));
 
     }
 
     private boolean isStatusMatchModerator(PostRequest postRequest, Post post, String userId) {
-        return post.getModerator() == null && isStatusMatch(postRequest, post) ||
-                post.getModerator() != null && String.valueOf(post.getModerator().getId()).equals(userId) && isStatusMatch(postRequest, post);
+        return post.getModerator() == null &&
+                isStatusMatch(postRequest, post) ||
+                post.getModerator() != null &&
+                        String.valueOf(post.getModerator().getId()).equals(userId) && isStatusMatch(postRequest, post);
     }
 
     private boolean isActivePost(Post post) {
